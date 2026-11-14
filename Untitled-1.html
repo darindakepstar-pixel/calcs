@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Калькулятор · инвойс CNY (Excel/CSV)</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:#f4f6f9;padding:16px;font-size:13px;color:#222}
+h1{font-size:19px}
+.card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:14px}
+.card h2{font-size:15px;color:#1a56a0;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+label{display:block;font-size:11px;color:#666;margin-bottom:3px}
+select,input{width:100%;padding:7px;border:1px solid #ccd3dd;border-radius:6px;font-size:13px}
+button{background:#1a56a0;color:#fff;border:none;padding:9px 18px;border-radius:6px;font-size:13px;cursor:pointer;margin-top:10px}
+button:hover{background:#0d3d75}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th{background:#1a56a0;color:#fff;padding:6px;font-size:11px;text-align:left}
+td{padding:5px 6px;border-bottom:1px solid #e3e7ee;font-size:12px}
+.warn{background:#fff3f3;border:1px solid #e0b4b4;border-radius:6px;padding:8px;font-size:12px;color:#a33;margin-top:8px}
+.ok{background:#eef9ee;border:1px solid #b7d8b7;border-radius:6px;padding:8px;font-size:12px;color:#2a7a2a;margin-top:8px}
+.tot{background:#eaf3ff;padding:10px;border-radius:8px;margin-top:10px;font-size:15px;display:flex;justify-content:space-between}
+.row{display:flex;justify-content:space-between;padding:5px 0}
+.hint{font-size:11px;color:#888;margin-top:6px}
+</style>
+</head>
+<body>
+
+<h1>💰 Калькулятор · инвойс (CNY → USD)</h1>
+
+<div class="card">
+<h2>1. Загрузить инвойс</h2>
+<input type="file" id="file" accept=".xlsx,.xls,.csv,.txt">
+<div id="sheets" style="margin-top:8px;display:none">
+  <label>Лист</label><select id="sheetSel" onchange="loadSheet()"></select>
+</div>
+<div id="msg"></div>
+</div>
+
+<div class="card">
+<h2>2. Курсы и ставки</h2>
+<div class="grid">
+  <div><label>Валюта (авто)</label><input id="invCur" readonly></div>
+  <div><label>Курс CNY→USD</label><input type="number" id="cnyUsd" value="0.1405" step="0.0001"></div>
+  <div><label>Курс USD→сом</label><input type="number" id="usdSom" value="87.41" step="0.01"></div>
+  <div><label>Пошлина, %</label><input type="number" id="duty" value="5" step="0.1"></div>
+  <div><label>Сбор, %</label><input type="number" id="fee" value="0.4" step="0.01"></div>
+  <div><label>НДС, %</label><input type="number" id="vat" value="12" step="0.1"></div>
+  <div><label>Транспорт/страховка, $</label><input type="number" id="trans" value="0" min="0"></div>
+</div>
+<button onclick="run()">Рассчитать</button>
+<div id="out"></div>
+</div>
+
+<script>
+let rows=[], wb=null;
+
+function num(s){
+  if(s==null||s==='') return 0;
+  if(typeof s==='number') return s;
+  s=String(s).replace(/[\s\u00A0\u2009]/g,'').replace(',','.');
+  const v=parseFloat(s);
+  return isNaN(v)?0:v;
+}
+
+document.getElementById('file').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      wb=XLSX.read(ev.target.result,{type:'array'});
+      const sel=document.getElementById('sheetSel');
+      sel.innerHTML=wb.SheetNames.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
+      document.getElementById('sheets').style.display=wb.SheetNames.length>1?'block':'none';
+      loadSheet();
+    }catch(err){
+      document.getElementById('msg').innerHTML=`<div class="warn">Не удалось открыть файл: ${err.message}</div>`;
+    }
+  };
+  r.readAsArrayBuffer(f);
+});
+
+function loadSheet(){
+  const ws=wb.Sheets[wb.SheetNames[+document.getElementById('sheetSel').value]];
+  // raw:true -> числа как числа, без форматирования
+  const aoa=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+  parse(aoa);
+}
+
+function parse(aoa){
+  const lines=aoa.map(r=>r.map(c=>c==null?'':String(c)));
+
+  // склеиваем строки-заголовки, пока не встретим строку с числом
+  let hEnd=0;
+  for(let i=0;i<lines.length;i++){
+    if(lines[i].some(c=>num(c)>0)) break;
+    hEnd=i;
+  }
+  const header=[];
+  for(let i=0;i<=hEnd;i++){
+    lines[i].forEach((c,j)=>{
+      const t=c.replace(/["\s]/g,'');
+      if(t && !header[j]) header[j]=t;
+    });
+  }
+
+  const find=(...keys)=>header.findIndex(h=>keys.some(k=>h.includes(k)));
+  const iName=find('товар','наимен','品名','NAME');
+  const iQty=find('数量','QTY','кол-во');
+  const iCur=find('币别','CURRENCY','валют');
+  const iPrice=find('单价','UNIT PRICE','цена');
+  const iSum=find('总金额','TOTAL','VALUE','сумм','金额');
+  const iPack=find('件数','PACKING','мест');
+  const iNet=find('净重','N.WEIGHT','нетто');
+  const iGross=find('毛重','G.WEIGHT','брутто');
+
+  rows=[];
+  let cur='';
+  lines.slice(hEnd+1).forEach(c=>{
+    const sum=num(c[iSum]);
+    if(!sum) return;
+    let cc=(iCur>=0?c[iCur]:'')||'';
+    if(/CNY|人民币|¥/i.test(cc)) cc='CNY';
+    else if(/USD|\$/i.test(cc)) cc='USD';
+    else if(/EUR|€/i.test(cc)) cc='EUR';
+    if(cc) cur=cc;
+    rows.push({
+      name:(c[iName]||'').replace(/["\s]+$/,''),
+      qty:num(c[iQty]), price:num(c[iPrice]), sum,
+      pack:num(c[iPack]), net:num(c[iNet]), gross:num(c[iGross]), cur:cc
+    });
+  });
+
+  if(!cur) cur=/CNY|人民币|¥/.test(lines.join(' '))?'CNY':'USD';
+  document.getElementById('invCur').value=cur;
+  document.getElementById('msg').innerHTML=rows.length
+    ? `<div class="ok">Загружено позиций: ${rows.length}. Валюта: <b>${cur}</b>${cur==='CNY'?' → пересчёт в $':''}</div>`
+    : `<div class="warn">Суммы не найдены. Проверь лист/формат.</div>`;
+  if(rows.length) run();
+}
+
+function toUsd(v,cc){
+  if(cc==='CNY') return v*(+document.getElementById('cnyUsd').value||0.1405);
+  if(cc==='EUR') return v*(+document.getElementById('eurUsd').value||1.08);
+  return v;
+}
+
+function run(){
+  if(!rows.length){ document.getElementById('out').innerHTML=''; return; }
+  const usdSom=+document.getElementById('usdSom').value||87.41;
+  const dPct=+document.getElementById('duty').value||0;
+  const fPct=+document.getElementById('fee').value||0;
+  const vPct=+document.getElementById('vat').value||0;
+  const trans=+document.getElementById('trans').value||0;
+
+  let tUsd=0;
+  rows.forEach(r=>tUsd+=toUsd(r.sum,r.cur));
+
+  let html=`<table><tr><th>Товар</th><th>Кол-во</th><th>Цена</th><th>Сумма CNY</th><th>USD</th><th>Нетто</th><th>Брутто</th><th>Пошлина $</th></tr>`;
+  let tDuty=0,tFee=0;
+  rows.forEach(r=>{
+    const usd=toUsd(r.sum,r.cur);
+    const share=tUsd?usd/tUsd:0;
+    const duty=(usd+trans*share)*dPct/100;
+    tDuty+=duty; tFee+=usd*fPct/100;
+    html+=`<tr><td>${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.price}</td>
+      <td>${r.sum.toLocaleString()}</td><td>${usd.toFixed(2)}</td>
+      <td>${r.net.toLocaleString()}</td><td>${r.gross.toLocaleString()}</td><td>${duty.toFixed(2)}</td></tr>`;
+  });
+  html+='</table>';
+
+  const invSom=tUsd*usdSom, dutySom=tDuty*usdSom, feeSom=tFee*usdSom;
+  const vat=(invSom+dutySom+feeSom)*vPct/100;
+  const total=invSom+dutySom+feeSom+vat;
+
+  html+=`<div class="tot"><span>Инвойс, USD</span><span>$${tUsd.toFixed(2)}</span></div>
+  <div class="row"><span>Инвойс, сом</span><b>${invSom.toFixed(2)}</b></div>
+  <div class="row"><span>Пошлина ${dPct}%</span><b>${dutySom.toFixed(2)}</b></div>
+  <div class="row"><span>Сбор ${fPct}%</span><b>${feeSom.toFixed(2)}</b></div>
+  <div class="row"><span>НДС ${vPct}%</span><b>${vat.toFixed(2)}</b></div>
+  <div class="tot"><span>ИТОГО к оплате</span><span>${total.toFixed(2)} сом</span></div>`;
+
+  const warn=[];
+  rows.forEach(r=>{
+    if(r.net&&r.gross&&r.net>r.gross) warn.push(`${r.name}: нетто > брутто`);
+    if(r.price&&r.qty&&Math.abs(r.price*r.qty-r.sum)>1) warn.push(`${r.name}: цена×кол-во ≠ сумме`);
+  });
+  if(warn.length) html+=`<div class="warn">${warn.join('<br>')}</div>`;
+  document.getElementById('out').innerHTML=html;
+}
+</script>
+</body>
+</html>
