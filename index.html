@@ -32,7 +32,6 @@ td.num{text-align:right;font-family:monospace}
 .tot{background:#eaf3ff;padding:10px;border-radius:8px;margin-top:10px;font-size:15px;display:flex;justify-content:space-between;font-weight:600}
 .row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #e3e7ee}
 .row b{font-family:monospace}
-.hint{font-size:11px;color:#888;margin-top:6px}
 .cur-tag{display:inline-block;background:#1a56a0;color:#fff;border-radius:4px;padding:1px 7px;font-size:11px;margin-left:6px}
 </style>
 </head>
@@ -57,9 +56,9 @@ td.num{text-align:right;font-family:monospace}
       <option value="CNY">CNY · юань</option>
     </select>
   </div>
-  <div><label id="lbl1">1 CNY =</label><input type="number" id="r1" value="0.1405" step="0.0001" oninput="calcRates()"></div>
-  <div><label id="lbl2">1 EUR =</label><input type="number" id="r2" value="1.0800" step="0.0001" oninput="calcRates()"></div>
-  <div><label>Курс USD→<span id="lbl3">USD</span></label><input type="number" id="r3" value="1" readonly style="background:#f0f2f5"></div>
+  <div><label>1 CNY = (USD)</label><input type="number" id="r1" value="0.1405" step="0.0001" oninput="calcRates()"></div>
+  <div><label>1 EUR = (USD)</label><input type="number" id="r2" value="1.0800" step="0.0001" oninput="calcRates()"></div>
+  <div><label>Курс <span id="lbl3">USD</span>→<span id="lbl3b">USD</span></label><input type="number" id="r3" value="1" readonly style="background:#f0f2f5"></div>
 </div>
 <div id="rateInfo" class="info" style="margin-top:10px"></div>
 </div>
@@ -101,7 +100,7 @@ td.num{text-align:right;font-family:monospace}
 </div>
 
 <script>
-/* ===== СПРАВОЧНИК КОДОВ ===== */
+/* ===== СПРАВОЧНИК КОДОВ ТН ВЭД ===== */
 const REF={
 '0603110000':{n:'Розы',pct:5,min:0.30},
 '0603120000':{n:'Гвоздики',pct:5,min:0.30},
@@ -119,15 +118,12 @@ const REF={
 let rows=[], wb=null;
 
 /* ===== КУРСЫ ===== */
-// r1: 1 CNY -> USD ; r2: 1 EUR -> USD ; r3: 1 base -> base (всегда 1)
 function rates(){
   const cnyUsd=+document.getElementById('r1').value||0.1405;
   const eurUsd=+document.getElementById('r2').value||1.08;
   const base=document.getElementById('base').value;
-  const baseUsd=base==='CNY'?cnyUsd:base==='EUR'?eurUsd:1;
-  return {cnyUsd,eurUsd,base,baseUsd};
+  return {cnyUsd,eurUsd,base};
 }
-// перевод из валюты v в валюту base
 function conv(v,from,to){
   const R=rates();
   const toUsd=x=>from==='CNY'?x*R.cnyUsd:from==='EUR'?x*R.eurUsd:x;
@@ -139,9 +135,8 @@ function money(v){ return v.toLocaleString('ru-RU',{minimumFractionDigits:2,maxi
 function syncCur(){
   const cur=document.getElementById('cur').value;
   const base=document.getElementById('base').value;
-  document.getElementById('lbl1').textContent='1 CNY = (USD)';
-  document.getElementById('lbl2').textContent='1 EUR = (USD)';
   document.getElementById('lbl3').textContent=base;
+  document.getElementById('lbl3b').textContent=base;
   document.getElementById('r3').value=1;
   document.getElementById('rateInfo').innerHTML=
     `Инвойс в <b>${cur}</b> → расчёт в <b>${base}</b>. `+
@@ -272,7 +267,6 @@ function run(){
     <th>Сумма (${cur})</th><th>База (${cur})</th><th>Нетто кг</th>
     <th>Пошлина (${base})</th></tr>`;
 
-  // итоги считаем отдельными переменными — вне цикла
   let sumDutyBase=0, sumFeeBase=0;
 
   rows.forEach(r=>{
@@ -297,69 +291,6 @@ function run(){
   const invBase=conv(tInv,cur,base);
   const feeBase=sumFeeBase;
   const dutyBase=sumDutyBase;
-  const vatBase=(invBase+dutyBase+feeBase)*vPct/100;
-  const total=invBase+dutyBase+feeBase+vatBase;
-
-  html+=`<div style="margin-top:12px">
-    <div class="row"><span>Инвойс</span><b>${money(invBase)} ${base}</b></div>
-    <div class="row"><span>Пошлина (по кодам ТН ВЭД)</span><b>${money(dutyBase)} ${base}</b></div>
-    <div class="row"><span>Сбор ${fPct}%</span><b>${money(feeBase)} ${base}</b></div>
-    <div class="row"><span>НДС ${vPct}%</span><b>${money(vatBase)} ${base}</b></div>
-    <div class="tot"><span>ИТОГО к оплате</span><span>${money(total)} ${base}</span></div>
-  </div>`;
-
-  const warn=[];
-  rows.forEach(r=>{
-    if(r.net&&r.gross&&r.net>r.gross) warn.push(`${r.name}: нетто ${r.net} > брутто ${r.gross}`);
-    if(r.price&&r.qty&&Math.abs(r.price*r.qty-r.sum)>1)
-      warn.push(`${r.name}: цена×кол-во = ${money(r.price*r.qty)}, в инвойсе ${money(r.sum)}`);
-  });
-  if(warn.length) html+=`<div class="warn">${warn.join('<br>')}</div>`;
-  if(addLog>0) html+=`<div class="info">Транспорт ${money(addLog)} ${cur} включён в базу (${inc}).</div>`;
-
-  document.getElementById('curTag').textContent=base;
-  document.getElementById('out').innerHTML=html;
-  document.getElementById('outCard').style.display='block';
-}
-  const cur=document.getElementById('cur').value;
-  const base=document.getElementById('base').value;
-  const dPct=+document.getElementById('duty').value||0;
-  const fPct=+document.getElementById('fee').value||0;
-  const vPct=+document.getElementById('vat').value||0;
-  const inc=document.getElementById('incoterm').value;
-  const trans=+document.getElementById('trans').value||0;
-  const addLog=(inc==='EXW'||inc==='FOB'||inc==='CFR')?trans:0;
-
-  // всё переводим в валюту инвойса -> считаем -> в base
-  let tInv=0;
-  rows.forEach(r=>tInv+=r.sum);
-  const transInv=addLog;
-
-  let html=`<table><tr><th>Товар</th><th>Код</th><th>Кол-во</th>
-    <th>Сумма (${cur})</th><th>База (${cur})</th><th>Нетто кг</th>
-    <th>Пошлина (${base})</th></tr>`;
-  let tDuty=0,tFee=0;
-  rows.forEach(r=>{
-    const share=tInv?r.sum/tInv:0;
-    const baseRow=r.sum+transInv*share;
-    const ref=REF[r.code]||{pct:dPct,min:0};
-    const adval=baseRow*ref.pct/100;
-    const spec=ref.min*r.net;               // €/кг -> пересчёт в валюту инвойса
-    const specCur=conv(spec,'EUR',cur);
-    const dutyCur=Math.max(adval,specCur);
-    const dutyBase=conv(dutyCur,cur,base);
-    tDuty+=dutyBase;
-    tFee+=conv(r.sum*fPct/100,cur,base);
-    html+=`<tr><td>${r.name}</td><td>${r.code}</td>
-      <td class="num">${r.qty.toLocaleString()}</td>
-      <td class="num">${money(r.sum)}</td><td class="num">${money(baseRow)}</td>
-      <td class="num">${r.net.toLocaleString()}</td>
-      <td class="num">${money(dutyBase)}</td></tr>`;
-  });
-  html+='</table>';
-
-  const invBase=conv(tInv,cur,base);
-  const feeBase=tFee;
   const vatBase=(invBase+dutyBase+feeBase)*vPct/100;
   const total=invBase+dutyBase+feeBase+vatBase;
 
