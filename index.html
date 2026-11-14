@@ -89,22 +89,68 @@ function loadSheet(){
 }
 
 function parse(aoa){
-  const lines=aoa.map(r=>r.map(c=>c==null?'':String(c)));
+  // приводим всё к массиву массивов строк, защищаясь от undefined
+  const lines=(aoa||[]).map(r=>Array.isArray(r)?r.map(c=>c==null?'':String(c)):[]);
+  if(!lines.length){
+    document.getElementById('msg').innerHTML='<div class="warn">Файл пустой.</div>';
+    return;
+  }
 
-  // склеиваем строки-заголовки, пока не встретим строку с числом
+  // 1. находим строку-заголовок: первая, где есть текст, но нет чисел
   let hEnd=0;
   for(let i=0;i<lines.length;i++){
-    if(lines[i].some(c=>num(c)>0)) break;
-    hEnd=i;
+    const hasText=lines[i].some(c=>c.trim().length>0);
+    const hasNum=lines[i].some(c=>num(c)>0);
+    if(hasText && !hasNum){ hEnd=i; }
+    if(hasNum) break;
   }
+
+  // 2. склеиваем строки заголовка (китайская + английская)
   const header=[];
   for(let i=0;i<=hEnd;i++){
-    lines[i].forEach((c,j)=>{
-      const t=c.replace(/["\s]/g,'');
+    (lines[i]||[]).forEach((c,j)=>{
+      const t=String(c).replace(/["\s]/g,'');
       if(t && !header[j]) header[j]=t;
     });
   }
+  // заполняем дырки, чтобы findIndex не падал
+  for(let j=0;j<50;j++) if(!header[j]) header[j]='';
 
+  const find=(...keys)=>header.findIndex(h=>String(h).includes(keys.find(k=>String(h).includes(k))));
+  const iName=find('товар','наимен','品名','NAME');
+  const iQty=find('数量','QTY','кол-во');
+  const iCur=find('币别','CURRENCY','валют');
+  const iPrice=find('单价','UNIT PRICE','цена');
+  const iSum=find('总金额','TOTAL','VALUE','金额','сумм');
+  const iPack=find('件数','PACKING','мест');
+  const iNet=find('净重','N.WEIGHT','нетто');
+  const iGross=find('毛重','G.WEIGHT','брутто');
+
+  rows=[];
+  let cur='';
+  lines.slice(hEnd+1).forEach(c=>{
+    if(!Array.isArray(c)) return;
+    const sum=num(c[iSum]);
+    if(!sum) return;
+    let cc=(iCur>=0?c[iCur]:'')||'';
+    if(/CNY|人民币|¥/i.test(cc)) cc='CNY';
+    else if(/USD|\$/i.test(cc)) cc='USD';
+    else if(/EUR|€/i.test(cc)) cc='EUR';
+    if(cc) cur=cc;
+    rows.push({
+      name:String(c[iName]||'').replace(/["\s]+$/,''),
+      qty:num(c[iQty]), price:num(c[iPrice]), sum,
+      pack:num(c[iPack]), net:num(c[iNet]), gross:num(c[iGross]), cur:cc
+    });
+  });
+
+  if(!cur) cur=/CNY|人民币|¥/.test(lines.join(' '))?'CNY':'USD';
+  document.getElementById('invCur').value=cur;
+  document.getElementById('msg').innerHTML=rows.length
+    ? `<div class="ok">Загружено позиций: ${rows.length}. Валюта: <b>${cur}</b></div>`
+    : `<div class="warn">Суммы не найдены. Заголовки: ${header.filter(Boolean).join(' | ')}</div>`;
+  if(rows.length) run();
+}
   const find=(...keys)=>header.findIndex(h=>keys.some(k=>h.includes(k)));
   const iName=find('товар','наимен','品名','NAME');
   const iQty=find('数量','QTY','кол-во');
