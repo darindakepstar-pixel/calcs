@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Таможенный калькулятор · цветы</title>
+<title>Таможенный калькулятор · валюта на выбор</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 if(typeof XLSX==='undefined'){
@@ -15,15 +15,15 @@ body{font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:#f4f6f9;pa
 h1{font-size:18px;margin:0 0 12px}
 h2{font-size:14px;color:#1a56a0;margin:0 0 10px}
 .card{background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:12px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 label{display:block;font-size:11px;color:#666;margin-bottom:3px}
 select,input{width:100%;padding:7px;border:1px solid #ccd3dd;border-radius:6px;font-size:13px;font-family:inherit}
-input.bad{border-color:#d33;background:#fff5f5}
+select:focus,input:focus{outline:2px solid #1a56a0;border-color:#1a56a0}
 button{background:#1a56a0;color:#fff;border:none;padding:9px 16px;border-radius:6px;font-size:13px;cursor:pointer;margin-top:10px}
 button:hover{background:#0d3d75}
 button.sec{background:#fff;color:#1a56a0;border:1px solid #1a56a0}
 table{width:100%;border-collapse:collapse;margin-top:8px}
-th{background:#1a56a0;color:#fff;padding:6px;font-size:11px;text-align:left;position:sticky;top:0}
+th{background:#1a56a0;color:#fff;padding:6px;font-size:11px;text-align:left}
 td{padding:5px 6px;border-bottom:1px solid #e3e7ee;font-size:12px}
 td.num{text-align:right;font-family:monospace}
 .warn{background:#fff3f3;border:1px solid #e0b4b4;border-radius:6px;padding:8px;font-size:12px;color:#a33;margin-top:8px}
@@ -33,36 +33,45 @@ td.num{text-align:right;font-family:monospace}
 .row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #e3e7ee}
 .row b{font-family:monospace}
 .hint{font-size:11px;color:#888;margin-top:6px}
-.tabs{display:flex;gap:6px;margin-bottom:10px}
-.tabs button{margin:0;padding:6px 14px;font-size:12px}
-.tabs button.on{background:#0d3d75}
-.scrol{max-height:420px;overflow:auto;border:1px solid #e3e7ee;border-radius:6px}
-.badge{display:inline-block;background:#e8f0fe;color:#1a56a0;border-radius:4px;padding:1px 6px;font-size:10px}
+.cur-tag{display:inline-block;background:#1a56a0;color:#fff;border-radius:4px;padding:1px 7px;font-size:11px;margin-left:6px}
 </style>
 </head>
 <body>
 
-<h1>🌸 Таможенный калькулятор · срезанные цветы и растения</h1>
-
-<div class="tabs">
-  <button class="on" onclick="tab('calc',this)">1. Расчёт</button>
-  <button onclick="tab('ref',this)">2. Справочник ТН ВЭД</button>
-</div>
-
-<!-- ============ РАСЧЁТ ============ -->
-<div id="tab-calc">
+<h1>🌸 Таможенный калькулятор</h1>
 
 <div class="card">
-<h2>1. Исходные данные</h2>
+<h2>1. Валюта и курсы</h2>
 <div class="grid">
-  <div><label>Источник данных</label>
-    <select id="src" onchange="toggleSrc()">
-      <option value="manual">Ввести вручную</option>
-      <option value="file">Загрузить Excel/CSV</option>
+  <div><label>Валюта инвойса</label>
+    <select id="cur" onchange="syncCur()">
+      <option value="CNY">CNY · юань</option>
+      <option value="USD">USD · доллар</option>
+      <option value="EUR">EUR · евро</option>
     </select>
   </div>
-  <div><label>Страна происхождения</label>
-    <select id="country"></select>
+  <div><label>Валюта расчёта (в ней вывод)</label>
+    <select id="base" onchange="syncCur()">
+      <option value="USD">USD · доллар</option>
+      <option value="EUR">EUR · евро</option>
+      <option value="CNY">CNY · юань</option>
+    </select>
+  </div>
+  <div><label id="lbl1">1 CNY =</label><input type="number" id="r1" value="0.1405" step="0.0001" oninput="calcRates()"></div>
+  <div><label id="lbl2">1 EUR =</label><input type="number" id="r2" value="1.0800" step="0.0001" oninput="calcRates()"></div>
+  <div><label>Курс USD→<span id="lbl3">USD</span></label><input type="number" id="r3" value="1" readonly style="background:#f0f2f5"></div>
+</div>
+<div id="rateInfo" class="info" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+<h2>2. Данные инвойса</h2>
+<div class="grid">
+  <div><label>Источник</label>
+    <select id="src" onchange="toggleSrc()">
+      <option value="manual">Ввести вручную</option>
+      <option value="file">Загрузить Excel / CSV</option>
+    </select>
   </div>
   <div><label>Incoterms</label>
     <select id="incoterm">
@@ -70,17 +79,10 @@ td.num{text-align:right;font-family:monospace}
       <option>CIF</option><option>DAP</option><option>DDP</option>
     </select>
   </div>
-  <div><label>Валюта инвойса</label>
-    <select id="cur" onchange="toggleCur()">
-      <option value="CNY">CNY (юань)</option>
-      <option value="USD">USD (доллар)</option>
-      <option value="EUR">EUR (евро)</option>
-    </select>
-  </div>
-  <div><label id="lblRate">Курс CNY→USD</label>
-    <input type="number" id="rate" value="0.1405" step="0.0001" oninput="checkRate()">
-  </div>
-  <div><label>Курс USD→сом</label><input type="number" id="usdSom" value="87.41" step="0.01"></div>
+  <div><label>Пошлина, %</label><input type="number" id="duty" value="5" step="0.1"></div>
+  <div><label>Сбор, %</label><input type="number" id="fee" value="0.4" step="0.01"></div>
+  <div><label>НДС, %</label><input type="number" id="vat" value="12" step="0.1"></div>
+  <div><label>Транспорт (в валюте инвойса)</label><input type="number" id="trans" value="0" min="0"></div>
 </div>
 <div id="fileBox" style="display:none;margin-top:10px">
   <input type="file" id="file" accept=".xlsx,.xls,.csv">
@@ -89,148 +91,84 @@ td.num{text-align:right;font-family:monospace}
   </div>
 </div>
 <div id="msg"></div>
-</div>
-
-<div class="card">
-<h2>2. Ставки</h2>
-<div class="grid">
-  <div><label>Пошлина, %</label><input type="number" id="duty" value="5" step="0.1"></div>
-  <div><label>Сбор за оформление, %</label><input type="number" id="fee" value="0.4" step="0.01"></div>
-  <div><label>НДС, %</label><input type="number" id="vat" value="12" step="0.1"></div>
-  <div><label>Транспорт, $</label><input type="number" id="trans" value="0" min="0"></div>
-  <div><label>Страховка, $</label><input type="number" id="ins" value="0" min="0"></div>
-  <div><label>Наценка, %</label><input type="number" id="mark" value="14" step="0.1"></div>
-</div>
-<div class="hint">Транспорт и страховка включаются в базу при EXW/FOB/CFR. При CIF/DAP/DDP — уже в цене инвойса.</div>
 <button onclick="run()">Рассчитать</button>
-<button class="sec" onclick="fillDemo()">Загрузить пример</button>
+<button class="sec" onclick="fillDemo()">Пример</button>
 </div>
 
 <div class="card" id="outCard" style="display:none">
-<h2>3. Результат</h2>
+<h2>3. Результат <span class="cur-tag" id="curTag"></span></h2>
 <div id="out"></div>
 </div>
 
-</div>
-
-<!-- ============ СПРАВОЧНИК ============ -->
-<div id="tab-ref" style="display:none">
-<div class="card">
-<h2>Справочник кодов ТН ВЭД</h2>
-<div class="grid">
-  <div><label>Поиск</label><input id="q" oninput="renderRef()" placeholder="код, название..."></div>
-  <div><label>Группа</label><select id="grp" onchange="renderRef()">
-    <option value="">Все</option>
-    <option value="0601">0601 — луковицы, клубни</option>
-    <option value="0602">0602 — живые растения</option>
-    <option value="0603">0603 — срезанные цветы</option>
-    <option value="0604">0604 — листва, ветки</option>
-  </select></div>
-</div>
-<div class="scrol" style="margin-top:10px">
-<table id="refTbl">
-<tr><th>Код</th><th>Товар</th><th>Ставка</th><th>Мин. €/кг</th><th>Примечание</th></tr>
-</table>
-</div>
-<div class="info">
-Ставки указаны как ориентир. Перед подачей декларации сверяйте с <b>TARIC</b> (для ЕС)
-или с <b>ТК ЕАЭС / ГТК КР</b> — ставки меняются, а по 0603-кодам в ЕС часто действует <b>0%</b>.
-</div>
-</div>
-</div>
-
 <script>
-/* ============ СПРАВОЧНИК ============ */
-const REF=[
-{c:'0603110000',n:'Розы, срезанные',pct:5,min:0.30,note:'основная позиция'},
-{c:'0603120000',n:'Гвоздики, срезанные',pct:5,min:0.30,note:''},
-{c:'0603130000',n:'Орхидеи, срезанные',pct:5,min:0.30,note:''},
-{c:'0603140000',n:'Хризантемы, срезанные',pct:5,min:0.30,note:''},
-{c:'0603150000',n:'Лилии, срезанные',pct:5,min:0.30,note:''},
-{c:'0603191000',n:'Гладиолусы',pct:5,min:0.30,note:''},
-{c:'0603192000',n:'Ранункулусы',pct:5,min:0.30,note:''},
-{c:'0603197000',n:'Прочие срезанные цветы',pct:5,min:0.30,note:'сборные позиции'},
-{c:'0603900000',n:'Сухоцветы',pct:7.5,min:0.45,note:'другая ставка!'},
-{c:'0604202000',n:'Ёлки (хвойные)',pct:0,min:0,note:'специфическая ставка €/кг'},
-{c:'0604204000',n:'Ветки хвойные',pct:0,min:0,note:'специфическая ставка €/кг'},
-{c:'0604209000',n:'Зелень, листва декоративная',pct:5,min:0.30,note:'проверить страну'},
-{c:'0601101000',n:'Луковицы гиацинтов',pct:5,min:0,note:''},
-{c:'0601102000',n:'Луковицы нарциссов',pct:5,min:0,note:''},
-{c:'0601103000',n:'Луковицы тюльпанов',pct:5,min:0,note:''},
-{c:'0601104000',n:'Луковицы гладиолусов',pct:5,min:0,note:''},
-{c:'0601109000',n:'Луковицы прочие',pct:5,min:0,note:''},
-{c:'0601201000',n:'Цикорий (корни)',pct:5,min:0,note:''},
-{c:'0601203000',n:'Орхидеи горшечные (фаленопсис)',pct:5,min:0,note:''},
-{c:'0601209000',n:'Луковицы, клубни прочие',pct:5,min:0,note:''},
-{c:'0602101000',n:'Черенки виноградные неукоренённые',pct:0,min:0,note:'льгота'},
-{c:'0602109000',n:'Черенки прочие неукоренённые',pct:5,min:0,note:''},
-{c:'0602201000',n:'Черенки виноградные',pct:0,min:0,note:'льгота'},
-{c:'0602208000',n:'Плодовые деревья',pct:5,min:0,note:''},
-{c:'0602300000',n:'Рододендроны, азалии',pct:5,min:0,note:''},
-{c:'0602400000',n:'Розы горшечные',pct:5,min:0,note:''},
-{c:'0602902000',n:'Ананас (растения)',pct:5,min:0,note:''},
-{c:'0602903000',n:'Земляника',pct:5,min:0,note:''},
-{c:'0602904500',n:'Черенки укоренённые',pct:5,min:0,note:''},
-{c:'0602904800',n:'Деревья открытого грунта',pct:5,min:0,note:''},
-{c:'0602905000',n:'Растения открытого грунта',pct:5,min:0,note:''},
-{c:'0602909100',n:'Растения温室开花',pct:5,min:0,note:''},
-{c:'0602909900',n:'Растения прочие (суккуленты и др.)',pct:5,min:0,note:''}
-];
-
-const COUNTRIES=['Китай','Кения','Эквадор','Колумбия','Нидерланды','Дания','Польша','Австрия','Венгрия','Израиль','Гватемала','Прочие'];
+/* ===== СПРАВОЧНИК КОДОВ ===== */
+const REF={
+'0603110000':{n:'Розы',pct:5,min:0.30},
+'0603120000':{n:'Гвоздики',pct:5,min:0.30},
+'0603130000':{n:'Орхидеи',pct:5,min:0.30},
+'0603140000':{n:'Хризантемы',pct:5,min:0.30},
+'0603150000':{n:'Лилии',pct:5,min:0.30},
+'0603191000':{n:'Гладиолусы',pct:5,min:0.30},
+'0603197000':{n:'Прочие срезанные цветы',pct:5,min:0.30},
+'0603900000':{n:'Сухоцветы',pct:7.5,min:0.45},
+'0604209000':{n:'Зелень декоративная',pct:5,min:0.30},
+'0601203000':{n:'Фаленопсис горшечной',pct:5,min:0},
+'0602909900':{n:'Растения прочие (суккуленты)',pct:5,min:0}
+};
 
 let rows=[], wb=null;
 
-/* ============ УТИЛИТЫ ============ */
-function num(s){
-  if(s==null||s==='') return 0;
-  if(typeof s==='number') return s;
-  s=String(s).replace(/[\s\u00A0\u2009\u202F]/g,'').replace(',','.');
-  const v=parseFloat(s);
-  return isNaN(v)?0:v;
+/* ===== КУРСЫ ===== */
+// r1: 1 CNY -> USD ; r2: 1 EUR -> USD ; r3: 1 base -> base (всегда 1)
+function rates(){
+  const cnyUsd=+document.getElementById('r1').value||0.1405;
+  const eurUsd=+document.getElementById('r2').value||1.08;
+  const base=document.getElementById('base').value;
+  const baseUsd=base==='CNY'?cnyUsd:base==='EUR'?eurUsd:1;
+  return {cnyUsd,eurUsd,base,baseUsd};
+}
+// перевод из валюты v в валюту base
+function conv(v,from,to){
+  const R=rates();
+  const toUsd=x=>from==='CNY'?x*R.cnyUsd:from==='EUR'?x*R.eurUsd:x;
+  const usd=toUsd(v);
+  return to==='CNY'?usd/R.cnyUsd:to==='EUR'?usd/R.eurUsd:usd;
 }
 function money(v){ return v.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
-function tab(id,btn){
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  document.getElementById('tab-calc').style.display=id==='calc'?'block':'none';
-  document.getElementById('tab-ref').style.display=id==='ref'?'block':'none';
+function syncCur(){
+  const cur=document.getElementById('cur').value;
+  const base=document.getElementById('base').value;
+  document.getElementById('lbl1').textContent='1 CNY = (USD)';
+  document.getElementById('lbl2').textContent='1 EUR = (USD)';
+  document.getElementById('lbl3').textContent=base;
+  document.getElementById('r3').value=1;
+  document.getElementById('rateInfo').innerHTML=
+    `Инвойс в <b>${cur}</b> → расчёт в <b>${base}</b>. `+
+    `Курс: 1 ${cur} = ${money(conv(1,cur,base))} ${base}. `+
+    (cur===base?'Совпадают — пересчёта нет.':'Пересчёт выполнен автоматически.');
+  if(rows.length) run();
+}
+function calcRates(){
+  document.getElementById('r3').value=1;
+  if(rows.length) run();
 }
 
+/* ===== ФАЙЛ ===== */
 function toggleSrc(){
   document.getElementById('fileBox').style.display=
     document.getElementById('src').value==='file'?'block':'none';
 }
-function toggleCur(){
-  const c=document.getElementById('cur').value;
-  const lbl=document.getElementById('lblRate');
-  const inp=document.getElementById('rate');
-  if(c==='CNY'){ lbl.textContent='Курс CNY→USD'; inp.value=0.1405; }
-  else if(c==='EUR'){ lbl.textContent='Курс EUR→USD'; inp.value=1.08; }
-  else { lbl.textContent='Курс USD (1)'; inp.value=1; }
-  checkRate();
+function num(s){
+  if(s==null||s==='') return 0;
+  if(typeof s==='number') return s;
+  s=String(s).replace(/[\s\u00A0\u2009\u202F]/g,'').replace(',','.');
+  const v=parseFloat(s); return isNaN(v)?0:v;
 }
-function checkRate(){
-  const v=+document.getElementById('rate').value;
-  const c=document.getElementById('cur').value;
-  const inp=document.getElementById('rate');
-  inp.classList.remove('bad');
-  if(c==='CNY' && v>0.5){
-    inp.classList.add('bad');
-    document.getElementById('msg').innerHTML=
-      '<div class="warn">Курс CNY→USD = '+v+' выглядит неверно. 1 юань ≈ 0,14 доллара. ' +
-      'Если у вас курс USD→CNY (например 7,1), возьмите обратный: 1 / 7,1 = 0,14.</div>';
-  }
-}
-
-/* ============ ФАЙЛ ============ */
 document.getElementById('file').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
   if(typeof XLSX==='undefined'){
-    document.getElementById('msg').innerHTML=
-      '<div class="warn">Библиотека Excel не загрузилась. Скачайте xlsx.full.min.js рядом с файлом ' +
-      'или используйте ввод вручную / CSV.</div>';
+    document.getElementById('msg').innerHTML='<div class="warn">Библиотека Excel не загрузилась. Используйте ввод вручную или CSV.</div>';
     return;
   }
   const r=new FileReader();
@@ -241,93 +179,69 @@ document.getElementById('file').addEventListener('change',e=>{
       sel.innerHTML=wb.SheetNames.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
       document.getElementById('sheets').style.display=wb.SheetNames.length>1?'block':'none';
       loadSheet();
-    }catch(err){
-      document.getElementById('msg').innerHTML='<div class="warn">Ошибка файла: '+err.message+'</div>';
-    }
+    }catch(err){ document.getElementById('msg').innerHTML='<div class="warn">'+err.message+'</div>'; }
   };
   r.readAsArrayBuffer(f);
 });
-
 function loadSheet(){
   const ws=wb.Sheets[wb.SheetNames[+document.getElementById('sheetSel').value]];
   parse(XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''}));
 }
-
 function parse(aoa){
   const lines=(aoa||[]).map(r=>Array.isArray(r)?r.map(c=>c==null?'':String(c)):[]);
   if(!lines.length){ document.getElementById('msg').innerHTML='<div class="warn">Файл пустой.</div>'; return; }
-
   let hEnd=0;
   for(let i=0;i<lines.length;i++){
     const hasText=lines[i].some(c=>c.trim().length>0);
     const hasNum=lines[i].some(c=>num(c)>0);
-    if(hasText && !hasNum) hEnd=i;
+    if(hasText&&!hasNum) hEnd=i;
     if(hasNum) break;
   }
   const header=[];
-  for(let i=0;i<=hEnd;i++){
-    (lines[i]||[]).forEach((c,j)=>{
-      const t=String(c).replace(/["\s]/g,'');
-      if(t && !header[j]) header[j]=t;
-    });
-  }
+  for(let i=0;i<=hEnd;i++) (lines[i]||[]).forEach((c,j)=>{
+    const t=String(c).replace(/["\s]/g,''); if(t&&!header[j]) header[j]=t;
+  });
   for(let j=0;j<60;j++) if(!header[j]) header[j]='';
-
-  const find=(...keys)=>header.findIndex(h=>keys.some(k=>String(h).includes(k)));
-  const iName=find('товар','наимен','品名','NAME');
-  const iQty=find('数量','QTY','кол-во');
-  const iCur=find('币别','CURRENCY','валют');
-  const iPrice=find('单价','UNIT PRICE','цена');
-  const iSum=find('总金额','TOTAL','VALUE','金额','сумм');
-  const iNet=find('净重','N.WEIGHT','нетто');
-  const iGross=find('毛重','G.WEIGHT','брутто');
-
-  rows=[];
-  let cur='';
+  const find=(...k)=>header.findIndex(h=>k.some(x=>String(h).includes(x)));
+  const iN=find('товар','наимен','品名','NAME'), iQ=find('数量','QTY','кол-во'),
+        iC=find('币别','CURRENCY','валют'), iP=find('单价','UNIT PRICE','цена'),
+        iS=find('总金额','TOTAL','VALUE','金额','сумм'),
+        iNet=find('净重','N.WEIGHT','нетто'), iG=find('毛重','G.WEIGHT','брутто');
+  rows=[]; let cur='';
   lines.slice(hEnd+1).forEach(c=>{
     if(!Array.isArray(c)) return;
-    const sum=num(c[iSum]);
-    if(!sum) return;
-    let cc=(iCur>=0?c[iCur]:'')||'';
+    const sum=num(c[iS]); if(!sum) return;
+    let cc=(iC>=0?c[iC]:'')||'';
     if(/CNY|人民币|¥/i.test(cc)) cc='CNY';
     else if(/USD|\$/i.test(cc)) cc='USD';
     else if(/EUR|€/i.test(cc)) cc='EUR';
     if(cc) cur=cc;
-    rows.push({
-      name:String(c[iName]||'').replace(/["\s]+$/,''),
-      qty:num(c[iQty]), price:num(c[iPrice]), sum,
-      net:num(c[iNet]), gross:num(c[iGross]), cur:cc,
-      code:guessCode(String(c[iName]||''))
-    });
+    rows.push({name:String(c[iN]||'').replace(/["\s]+$/,''),qty:num(c[iQ]),price:num(c[iP]),
+      sum,net:num(c[iNet]),gross:num(c[iG]),cur:cc,code:guessCode(String(c[iN]||''))});
   });
-
   if(!cur) cur=/CNY|人民币|¥/.test(lines.join(' '))?'CNY':'USD';
   document.getElementById('cur').value=cur;
-  toggleCur();
+  syncCur();
   document.getElementById('msg').innerHTML=rows.length
-    ? `<div class="ok">Загружено позиций: ${rows.length}. Валюта: <b>${cur}</b>. Коды подобраны автоматически — проверьте их в таблице ниже.</div>`
-    : `<div class="warn">Суммы не найдены. Прочитанные заголовки: ${header.filter(Boolean).join(' | ')}</div>`;
+    ? `<div class="ok">Загружено позиций: ${rows.length}. Валюта: <b>${cur}</b>.</div>`
+    : `<div class="warn">Суммы не найдены. Заголовки: ${header.filter(Boolean).join(' | ')}</div>`;
   if(rows.length) run();
 }
-
 function guessCode(name){
   const s=name.toLowerCase();
-  if(/роз|玫瑰/.test(s) && !/горш|盆栽/.test(s)) return '0603110000';
+  if(/роз|玫瑰/.test(s)&&!/горш|盆栽/.test(s)) return '0603110000';
   if(/гвозд|康乃馨/.test(s)) return '0603120000';
   if(/хризантем|菊花/.test(s)) return '0603140000';
   if(/орхид|兰花|фаленопсис/.test(s)) return /горш|盆栽/.test(s)?'0601203000':'0603130000';
   if(/лилия|百合/.test(s)) return '0603150000';
   if(/гладиол|剑兰/.test(s)) return '0603191000';
-  if(/ранункул|花毛茛/.test(s)) return '0603192000';
   if(/сухоцвет|干花/.test(s)) return '0603900000';
-  if(/ёлк|圣诞树/.test(s)) return '0604202000';
-  if(/ветк|针叶/.test(s)) return '0604204000';
-  if(/зелень|эвкалипт|писташия|装饰叶/.test(s)) return '0604209000';
+  if(/зелень|эвкалипт|装饰叶/.test(s)) return '0604209000';
   if(/суккулент|горш/.test(s)) return '0602909900';
   return '0603197000';
 }
 
-/* ============ РАСЧЁТ ============ */
+/* ===== РАСЧЁТ ===== */
 function fillDemo(){
   rows=[
     {name:'Роза',qty:14000,price:2.16,sum:30187.18,net:785,gross:982,cur:'CNY',code:'0603110000'},
@@ -335,109 +249,77 @@ function fillDemo(){
     {name:'Хризантема',qty:19000,price:4.06,sum:77061.48,net:1426,gross:1782,cur:'CNY',code:'0603140000'}
   ];
   document.getElementById('cur').value='CNY';
-  document.getElementById('rate').value=0.1405;
-  run();
-}
-
-function toUsd(v,cc){
-  const r=+document.getElementById('rate').value||1;
-  if(cc==='CNY') return v*r;
-  if(cc==='EUR') return cc==='EUR'?v*(document.getElementById('cur').value==='EUR'?r:1.08):v;
-  return v;
+  document.getElementById('base').value='USD';
+  syncCur();
 }
 
 function run(){
-  if(!rows.length){
-    document.getElementById('outCard').style.display='none';
-    document.getElementById('msg').innerHTML='<div class="warn">Нет данных для расчёта.</div>';
-    return;
-  }
-  const usdSom=+document.getElementById('usdSom').value||87.41;
+  if(!rows.length){ document.getElementById('outCard').style.display='none'; return; }
+  const cur=document.getElementById('cur').value;
+  const base=document.getElementById('base').value;
   const dPct=+document.getElementById('duty').value||0;
   const fPct=+document.getElementById('fee').value||0;
   const vPct=+document.getElementById('vat').value||0;
-  const mPct=+document.getElementById('mark').value||0;
   const inc=document.getElementById('incoterm').value;
   const trans=+document.getElementById('trans').value||0;
-  const ins=+document.getElementById('ins').value||0;
-  const addLog=(inc==='EXW'||inc==='FOB'||inc==='CFR')?(trans+ins):0;
+  const addLog=(inc==='EXW'||inc==='FOB'||inc==='CFR')?trans:0;
 
-  let tUsd=0;
-  rows.forEach(r=>tUsd+=toUsd(r.sum,r.cur));
+  // всё переводим в валюту инвойса -> считаем -> в base
+  let tInv=0;
+  rows.forEach(r=>tInv+=r.sum);
+  const transInv=addLog;
 
-  let html=`<table><tr><th>Товар</th><th>Код ТН ВЭД</th><th>Кол-во</th><th>Сумма (инв.)</th>
-    <th>USD</th><th>База USD</th><th>Нетто кг</th><th>Пошлина $</th></tr>`;
-  let tDuty=0,tFee=0,tNet=0;
-  const byCode={};
-
+  let html=`<table><tr><th>Товар</th><th>Код</th><th>Кол-во</th>
+    <th>Сумма (${cur})</th><th>База (${cur})</th><th>Нетто кг</th>
+    <th>Пошлина (${base})</th></tr>`;
+  let tDuty=0,tFee=0;
   rows.forEach(r=>{
-    const usd=toUsd(r.sum,r.cur);
-    const share=tUsd?usd/tUsd:0;
-    const base=usd+addLog*share;
-    const ref=REF.find(x=>x.c===r.code)||{pct:dPct,min:0};
-    const adval=base*ref.pct/100;
-    const spec=ref.min*r.net;
-    const duty=Math.max(adval,spec);
-    tDuty+=duty; tFee+=usd*fPct/100; tNet+=r.net;
-    byCode[r.code]=(byCode[r.code]||0)+duty;
-    html+=`<tr><td>${r.name}</td><td><span class="badge">${r.code}</span></td>
+    const share=tInv?r.sum/tInv:0;
+    const baseRow=r.sum+transInv*share;
+    const ref=REF[r.code]||{pct:dPct,min:0};
+    const adval=baseRow*ref.pct/100;
+    const spec=ref.min*r.net;               // €/кг -> пересчёт в валюту инвойса
+    const specCur=conv(spec,'EUR',cur);
+    const dutyCur=Math.max(adval,specCur);
+    const dutyBase=conv(dutyCur,cur,base);
+    tDuty+=dutyBase;
+    tFee+=conv(r.sum*fPct/100,cur,base);
+    html+=`<tr><td>${r.name}</td><td>${r.code}</td>
       <td class="num">${r.qty.toLocaleString()}</td>
-      <td class="num">${money(r.sum)} ${r.cur}</td>
-      <td class="num">${money(usd)}</td><td class="num">${money(base)}</td>
-      <td class="num">${r.net.toLocaleString()}</td><td class="num">${money(duty)}</td></tr>`;
+      <td class="num">${money(r.sum)}</td><td class="num">${money(baseRow)}</td>
+      <td class="num">${r.net.toLocaleString()}</td>
+      <td class="num">${money(dutyBase)}</td></tr>`;
   });
   html+='</table>';
 
-  const invSom=tUsd*usdSom, dutySom=tDuty*usdSom, feeSom=tFee*usdSom;
-  const vat=(invSom+dutySom+feeSom)*vPct/100;
-  const total=invSom+dutySom+feeSom+vat;
-  const cost=invSom+dutySom+feeSom;
-  const price=cost*(1+mPct/100);
+  const invBase=conv(tInv,cur,base);
+  const feeBase=tFee;
+  const vatBase=(invBase+dutyBase+feeBase)*vPct/100;
+  const total=invBase+dutyBase+feeBase+vatBase;
 
   html+=`<div style="margin-top:12px">
-    <div class="row"><span>Инвойс, USD</span><b>$${money(tUsd)}</b></div>
-    <div class="row"><span>Инвойс, сом</span><b>${money(invSom)}</b></div>
-    <div class="row"><span>Пошлина (по кодам ТН ВЭД)</span><b>${money(dutySom)}</b></div>
-    <div class="row"><span>Сбор за оформление ${fPct}%</span><b>${money(feeSom)}</b></div>
-    <div class="row"><span>НДС ${vPct}% (база: инвойс+пошлина+сбор)</span><b>${money(vat)}</b></div>
-    <div class="tot"><span>ИТОГО к оплате на таможне</span><span>${money(total)} сом</span></div>
-    <div class="row" style="margin-top:10px"><span>Себестоимость (инвойс+платежи)</span><b>${money(cost)}</b></div>
-    <div class="row"><span>Цена реализации (+${mPct}%)</span><b>${money(price)}</b></div>
-    <div class="row"><span>Прибыль (грязная)</span><b>${money(price-cost)}</b></div>
+    <div class="row"><span>Инвойс</span><b>${money(invBase)} ${base}</b></div>
+    <div class="row"><span>Пошлина (по кодам ТН ВЭД)</span><b>${money(dutyBase)} ${base}</b></div>
+    <div class="row"><span>Сбор ${fPct}%</span><b>${money(feeBase)} ${base}</b></div>
+    <div class="row"><span>НДС ${vPct}%</span><b>${money(vatBase)} ${base}</b></div>
+    <div class="tot"><span>ИТОГО к оплате</span><span>${money(total)} ${base}</span></div>
   </div>`;
 
   const warn=[];
   rows.forEach(r=>{
-    if(r.net&&r.gross&&r.net>r.gross) warn.push(`${r.name}: нетто ${r.net} > брутто ${r.gross} — так быть не может`);
+    if(r.net&&r.gross&&r.net>r.gross) warn.push(`${r.name}: нетто ${r.net} > брутто ${r.gross}`);
     if(r.price&&r.qty&&Math.abs(r.price*r.qty-r.sum)>1)
-      warn.push(`${r.name}: цена×кол-во = ${money(r.price*r.qty)}, а в инвойсе ${money(r.sum)}`);
+      warn.push(`${r.name}: цена×кол-во = ${money(r.price*r.qty)}, в инвойсе ${money(r.sum)}`);
   });
   if(warn.length) html+=`<div class="warn">${warn.join('<br>')}</div>`;
-  if(addLog>0) html+=`<div class="info">Транспорт и страховка (${money(addLog)}$) включены в базу как при ${inc}.</div>`;
+  if(addLog>0) html+=`<div class="info">Транспорт ${money(addLog)} ${cur} включён в базу (${inc}).</div>`;
 
+  document.getElementById('curTag').textContent=base;
   document.getElementById('out').innerHTML=html;
   document.getElementById('outCard').style.display='block';
 }
 
-/* ============ СПРАВОЧНИК ============ */
-function renderRef(){
-  const q=(document.getElementById('q').value||'').toLowerCase();
-  const g=document.getElementById('grp').value;
-  const tb=document.getElementById('refTbl');
-  tb.innerHTML='<tr><th>Код</th><th>Товар</th><th>Ставка</th><th>Мин. €/кг</th><th>Примечание</th></tr>';
-  REF.filter(r=>(!g||r.c.startsWith(g))&&
-    (!q||r.c.includes(q)||r.n.toLowerCase().includes(q)))
-  .forEach(r=>{
-    tb.innerHTML+=`<tr><td>${r.c}</td><td>${r.n}</td>
-      <td>${r.pct?r.pct+'%':'—'}</td><td>${r.min?r.min.toFixed(2):'—'}</td>
-      <td>${r.note}</td></tr>`;
-  });
-}
-
-/* ============ СТАРТ ============ */
-document.getElementById('country').innerHTML=
-  COUNTRIES.map(c=>`<option>${c}</option>`).join('');
-renderRef();
+syncCur();
 </script>
 </body>
 </html>
