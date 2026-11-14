@@ -264,6 +264,72 @@ function run(){
   const trans=+document.getElementById('trans').value||0;
   const addLog=(inc==='EXW'||inc==='FOB'||inc==='CFR')?trans:0;
 
+  let tInv=0;
+  rows.forEach(r=>tInv+=r.sum);
+  const transInv=addLog;
+
+  let html=`<table><tr><th>Товар</th><th>Код</th><th>Кол-во</th>
+    <th>Сумма (${cur})</th><th>База (${cur})</th><th>Нетто кг</th>
+    <th>Пошлина (${base})</th></tr>`;
+
+  // итоги считаем отдельными переменными — вне цикла
+  let sumDutyBase=0, sumFeeBase=0;
+
+  rows.forEach(r=>{
+    const share=tInv?r.sum/tInv:0;
+    const baseRow=r.sum+transInv*share;
+    const ref=REF[r.code]||{pct:dPct,min:0};
+    const adval=baseRow*ref.pct/100;
+    const specCur=conv(ref.min*r.net,'EUR',cur);
+    const dutyCur=Math.max(adval,specCur);
+    const dutyBaseRow=conv(dutyCur,cur,base);
+    const feeBaseRow=conv(r.sum*fPct/100,cur,base);
+    sumDutyBase+=dutyBaseRow;
+    sumFeeBase+=feeBaseRow;
+    html+=`<tr><td>${r.name}</td><td>${r.code}</td>
+      <td class="num">${r.qty.toLocaleString()}</td>
+      <td class="num">${money(r.sum)}</td><td class="num">${money(baseRow)}</td>
+      <td class="num">${r.net.toLocaleString()}</td>
+      <td class="num">${money(dutyBaseRow)}</td></tr>`;
+  });
+  html+='</table>';
+
+  const invBase=conv(tInv,cur,base);
+  const feeBase=sumFeeBase;
+  const dutyBase=sumDutyBase;
+  const vatBase=(invBase+dutyBase+feeBase)*vPct/100;
+  const total=invBase+dutyBase+feeBase+vatBase;
+
+  html+=`<div style="margin-top:12px">
+    <div class="row"><span>Инвойс</span><b>${money(invBase)} ${base}</b></div>
+    <div class="row"><span>Пошлина (по кодам ТН ВЭД)</span><b>${money(dutyBase)} ${base}</b></div>
+    <div class="row"><span>Сбор ${fPct}%</span><b>${money(feeBase)} ${base}</b></div>
+    <div class="row"><span>НДС ${vPct}%</span><b>${money(vatBase)} ${base}</b></div>
+    <div class="tot"><span>ИТОГО к оплате</span><span>${money(total)} ${base}</span></div>
+  </div>`;
+
+  const warn=[];
+  rows.forEach(r=>{
+    if(r.net&&r.gross&&r.net>r.gross) warn.push(`${r.name}: нетто ${r.net} > брутто ${r.gross}`);
+    if(r.price&&r.qty&&Math.abs(r.price*r.qty-r.sum)>1)
+      warn.push(`${r.name}: цена×кол-во = ${money(r.price*r.qty)}, в инвойсе ${money(r.sum)}`);
+  });
+  if(warn.length) html+=`<div class="warn">${warn.join('<br>')}</div>`;
+  if(addLog>0) html+=`<div class="info">Транспорт ${money(addLog)} ${cur} включён в базу (${inc}).</div>`;
+
+  document.getElementById('curTag').textContent=base;
+  document.getElementById('out').innerHTML=html;
+  document.getElementById('outCard').style.display='block';
+}
+  const cur=document.getElementById('cur').value;
+  const base=document.getElementById('base').value;
+  const dPct=+document.getElementById('duty').value||0;
+  const fPct=+document.getElementById('fee').value||0;
+  const vPct=+document.getElementById('vat').value||0;
+  const inc=document.getElementById('incoterm').value;
+  const trans=+document.getElementById('trans').value||0;
+  const addLog=(inc==='EXW'||inc==='FOB'||inc==='CFR')?trans:0;
+
   // всё переводим в валюту инвойса -> считаем -> в base
   let tInv=0;
   rows.forEach(r=>tInv+=r.sum);
