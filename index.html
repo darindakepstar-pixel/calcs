@@ -2,7 +2,6 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Калькулятор поставки цветов · 鲜花进口成本计算器</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -11,520 +10,405 @@ if(typeof XLSX==='undefined'){
 }
 </script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:#f4f6f9;color:#222;padding:16px;font-size:14px}
-h1{font-size:20px;margin-bottom:4px}
-.sub{color:#666;font-size:12px;margin-bottom:16px}
-.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.card h2{font-size:15px;margin-bottom:10px;color:#1a56a0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
-label{display:block;font-size:12px;color:#555;margin-bottom:3px}
-input,select{width:100%;padding:7px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px;font-family:inherit}
-input:focus,select:focus{outline:none;border-color:#1a56a0}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{background:#1a56a0;color:#fff;padding:7px 5px;text-align:left;white-space:nowrap;font-weight:600}
-td{padding:6px 5px;border-bottom:1px solid #e3e7ee;white-space:nowrap}
-td input{width:92px;padding:5px;font-size:12px}
-tr:hover{background:#f0f7ff}
-.num{text-align:right}
-.warn{background:#ffe0e0;color:#b00;font-weight:600;padding:2px 6px;border-radius:4px}
-.nocode{background:#ffe8d6;color:#c60;font-weight:600;padding:2px 6px;border-radius:4px}
-.ok{color:#080;font-weight:600}
-.tot{background:#eaf3ea;font-weight:700}
-.big{font-size:16px;color:#0a7d2e}
-.kg{background:#f2f7ff;font-weight:700}
-.btn{padding:8px 14px;border:none;border-radius:6px;background:#1a56a0;color:#fff;cursor:pointer;font-size:13px;margin:6px 6px 0 0}
-.btn.sec{background:#888}
-.legend{font-size:11px;color:#666;margin-top:8px}
-.legend span{display:inline-block;margin-right:10px}
-.scroll{overflow-x:auto}
-.msg{margin-top:10px;font-size:12px;padding:8px;border-radius:6px;display:none}
-.msg.ok{background:#eef9ee;color:#2a7a2a;border:1px solid #b7d8b7;display:block}
-.msg.err{background:#fff3f3;color:#a33;border:1px solid #e0b4b4;display:block}
-.hint{font-size:11px;color:#777;margin-top:8px}
-.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
-.sum div{background:#f7f9fc;border:1px solid #e3e7ee;border-radius:8px;padding:9px}
-@media print{.btn,#fileBox,.hint{display:none}.scroll{overflow:visible}}
+*{box-sizing:border-box}
+body{font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:#f4f6f9;padding:14px;font-size:13px;color:#222;margin:0}
+h1{font-size:19px;margin:0 0 4px}
+h2{font-size:14px;color:#1a56a0;margin:0 0 10px}
+.sub{font-size:12px;color:#666;margin-bottom:12px}
+.card{background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+label{display:block;font-size:11px;color:#666;margin-bottom:3px}
+select,input{width:100%;padding:7px;border:1px solid #ccd3dd;border-radius:6px;font-size:13px;font-family:inherit}
+select:focus,input:focus{outline:2px solid #1a56a0;border-color:#1a56a0}
+button{background:#1a56a0;color:#fff;border:none;padding:9px 16px;border-radius:6px;font-size:13px;cursor:pointer;margin-top:10px}
+button:hover{background:#0d3d75}
+button.sec{background:#fff;color:#1a56a0;border:1px solid #1a56a0}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th{background:#1a56a0;color:#fff;padding:6px;font-size:11px;text-align:left}
+td{padding:5px 6px;border-bottom:1px solid #e3e7ee;font-size:12px}
+td.num{text-align:right;font-family:monospace}
+td.kg{background:#f6f9ff;font-weight:600;text-align:right;font-family:monospace}
+.warn{background:#fff3f3;border:1px solid #e0b4b4;border-radius:6px;padding:8px;font-size:12px;color:#a33;margin-top:8px}
+.ok{background:#eef9ee;border:1px solid #b7d8b7;border-radius:6px;padding:8px;font-size:12px;color:#2a7a2a;margin-top:8px}
+.info{background:#f0f6ff;border:1px solid #b7cdf0;border-radius:6px;padding:8px;font-size:12px;color:#255;margin-top:8px}
+.tot{background:#eaf3ff;padding:10px;border-radius:8px;margin-top:10px;font-size:15px;display:flex;justify-content:space-between;font-weight:600}
+.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #e3e7ee}
+.row b{font-family:monospace}
+.hint{font-size:11px;color:#888;margin-top:6px}
+.cur-tag{display:inline-block;background:#1a56a0;color:#fff;border-radius:4px;padding:1px 7px;font-size:11px;margin-left:6px}
 </style>
 </head>
 <body>
 
-<h1>Калькулятор поставки цветов <span style="color:#888">/ 鲜花进口成本计算器</span></h1>
-<div class="sub">Инвойс читается из Excel (двуязычная шапка 中文/EN) или вносится вручную. Расчёт: таможенная стоимость, пошлина 1 (%), пошлина 2 (EUR/кг), НДС, таможенный сбор по партиям, контрольные цены, себестоимость за кг нетто.</div>
+<h1>Калькулятор поставки цветов / 鲜花进口成本计算器</h1>
+<div class="sub">Инвойс читается из Excel (двуязычная шапка 中文/EN) или вносится вручную.
+Расчёт: таможенная стоимость, пошлина 1 (%), пошлина 2 (EUR/кг), НДС, себестоимость за кг нетто.</div>
 
 <div class="card">
-  <h2>1. Валюта и курсы · 币种与汇率</h2>
-  <div class="grid">
-    <div><label>Дата поставки · 交货日期</label><input type="date" id="date" value="2026-11-16"></div>
-    <div><label>Валюта инвойса · 发票币种</label>
-      <select id="invCur" onchange="calc()">
-        <option value="CNY">CNY · юань · 人民币</option>
-        <option value="USD">USD · доллар · 美元</option>
-        <option value="EUR">EUR · евро · 欧元</option>
-      </select>
-    </div>
-    <div><label>Валюта расчёта · 核算币种</label>
-      <select id="base" onchange="changeBase()">
-        <option value="RUB">RUB · рубль</option>
-        <option value="USD">USD · доллар</option>
-        <option value="EUR">EUR · евро</option>
-        <option value="CNY">CNY · юань</option>
-      </select>
-    </div>
-    <div><label>1 CNY = (в <span class="bcur">RUB</span>)</label><input type="number" id="rCNY" value="11.24" step="0.0001" oninput="calc()"></div>
-    <div><label>1 USD = (в <span class="bcur">RUB</span>)</label><input type="number" id="rUSD" value="80" step="0.0001" oninput="calc()"></div>
-    <div><label>1 EUR = (в <span class="bcur">RUB</span>)</label><input type="number" id="rEUR" value="88" step="0.0001" oninput="calc()"></div>
-    <div><label>1 RUB = (в <span class="bcur">RUB</span>)</label><input type="number" id="rRUB" value="1" step="0.0001" oninput="calc()"></div>
+<h2>1. Валюта и курсы · 币种与汇率</h2>
+<div class="grid">
+  <div><label>Дата поставки · 交货日期</label><input type="date" id="date" value="2026-11-16"></div>
+  <div><label>Валюта инвойса · 发票币种</label>
+    <select id="cur" onchange="syncCur()">
+      <option value="CNY">CNY · юань · 美元</option>
+      <option value="USD">USD · доллар · 美元</option>
+      <option value="EUR">EUR · евро · 欧元</option>
+    </select>
   </div>
-  <div class="hint">Все курсы заданы в валюту расчёта; курс самой валюты расчёта = 1 (поле заблокировано). При смене валюты расчёта остальные курсы пересчитываются автоматически. Контрольные цены сверяются в USD/кг, пошлина 2 - в EUR/кг. Таможенный сбор (п.2) задаётся в той же валюте, что и расчёт.</div>
+  <div><label>Валюта расчёта · 核算币种</label>
+    <select id="base" onchange="syncCur()">
+      <option value="USD">USD · доллар</option>
+      <option value="EUR">EUR · евро</option>
+      <option value="CNY">CNY · юань</option>
+      <option value="RUB">RUB · рубль</option>
+    </select>
+  </div>
+  <div><label>1 CNY = (в USD)</label><input type="number" id="r1" value="0.1405" step="0.0001" oninput="calcRates()"></div>
+  <div><label>1 EUR = (в USD)</label><input type="number" id="r2" value="1.1000" step="0.0001" oninput="calcRates()"></div>
+  <div><label>1 RUB = (в USD)</label><input type="number" id="r3" value="0.0125" step="0.0001" oninput="calcRates()"></div>
+</div>
+<div id="rateInfo" class="info" style="margin-top:10px"></div>
 </div>
 
 <div class="card">
-  <h2>2. Ставки и расходы · 税率与费用</h2>
-  <div class="grid">
-    <div><label>НДС, % · 增值税</label><input type="number" id="vat" value="22" step="0.1" oninput="calc()"></div>
-    <div><label>Транспорт, <span class="bcur">RUB</span> · 运费</label><input type="number" id="transport" value="1300000" oninput="calc()"></div>
-    <div><label>Брокер, <span class="bcur">RUB</span> · 报关代理费</label><input type="number" id="broker" value="30000" oninput="calc()"></div>
-    <div><label>СВХ, <span class="bcur">RUB</span> · 仓储费</label><input type="number" id="svh" value="30000" oninput="calc()"></div>
-    <div><label>Доставка по стране, <span class="bcur">RUB</span> · 国内配送</label><input type="number" id="deliv" value="150000" oninput="calc()"></div>
-    <div><label>Наценка, % · 加价率</label><input type="number" id="mark" value="50" step="1" oninput="calc()"></div>
-  </div>
-  <div class="scroll" style="margin-top:10px">
-    <table id="feeTbl">
-      <thead><tr><th>Таможенный сбор · 报关费: таможенная стоимость до (в <span class="bcur">RUB</span>)</th><th>Сбор, <span class="bcur">RUB</span></th></tr></thead>
-      <tbody>
-        <tr><td><input class="feeTh" type="number" value="500000" oninput="calc()"></td><td><input class="feeV" type="number" value="1237" oninput="calc()"></td></tr>
-        <tr><td><input class="feeTh" type="number" value="1000000" oninput="calc()"></td><td><input class="feeV" type="number" value="2475" oninput="calc()"></td></tr>
-        <tr><td><input class="feeTh" type="number" value="2000000" oninput="calc()"></td><td><input class="feeV" type="number" value="4950" oninput="calc()"></td></tr>
-        <tr><td><input class="feeTh" type="number" value="5000000" oninput="calc()"></td><td><input class="feeV" type="number" value="7425" oninput="calc()"></td></tr>
-        <tr><td>свыше перечисленных · 超过</td><td><input class="feeV" type="number" value="7425" oninput="calc()"></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="hint">Транспорт и прочие расходы распределяются по коробкам; если коробок нет - по весу нетто, если и веса нет - поровну между позициями.</div>
+<h2>2. Ставки и расходы · 税率与费用</h2>
+<div class="grid">
+  <div><label>НДС, % · 增值税</label><input type="number" id="vat" value="22" step="0.1" oninput="run()"></div>
+  <div><label>Пошлина 1 (если кода нет), %</label><input type="number" id="duty" value="5" step="0.1" oninput="run()"></div>
+  <div><label>Транспорт · 运费</label><input type="number" id="trans" value="16250" min="0" oninput="run()"></div>
+  <div><label>Брокер · 报关代理费</label><input type="number" id="broker" value="375" min="0" oninput="run()"></div>
+  <div><label>СВХ · 仓储费</label><input type="number" id="svh" value="375" min="0" oninput="run()"></div>
+  <div><label>Доставка по стране · 国内配送</label><input type="number" id="deliv" value="1875" min="0" oninput="run()"></div>
 </div>
-
-<div class="card">
-  <h2>3. Справочник кодов · 编码库</h2>
-  <div class="scroll"><table id="refTbl">
-    <thead><tr><th>Код ТН ВЭД</th><th>Наименование RU</th><th>中文</th><th>Пошлина 1, %</th><th>Пошлина 2, EUR/кг</th><th>Контроль, USD/кг</th></tr></thead>
-    <tbody id="refBody"></tbody>
-  </table></div>
-  <button class="btn sec" onclick="addRef()">+ Добавить код · 添加编码</button>
-  <div class="legend">
-    <span class="nocode">код не найден · 未找到编码</span>
-    <span class="warn">цена ниже контрольной · 低于控制价</span>
+<div id="fileBox" style="margin-top:10px">
+  <input type="file" id="file" accept=".xlsx,.xls,.csv">
+  <div id="sheets" style="margin-top:8px;display:none">
+    <label>Лист</label><select id="sheetSel" onchange="loadSheet()"></select>
   </div>
 </div>
-
-<div class="card">
-  <h2>4. Позиции поставки · 明细</h2>
-  <div id="fileBox">
-    <label>Загрузить инвойс Excel / CSV · 导入发票</label>
-    <input type="file" id="file" accept=".xlsx,.xls,.csv">
-    <div id="sheets" style="margin-top:8px;display:none">
-      <label>Лист · 工作表</label><select id="sheetSel" onchange="loadSheet()"></select>
-    </div>
-  </div>
-  <div id="msg" class="msg"></div>
-  <div class="scroll" style="margin-top:10px"><table id="tbl">
-    <thead><tr>
-      <th>№</th><th>Код · 编码</th><th>Наименование · 名称</th>
-      <th>Кол-во, шт</th><th>Нетто, кг</th><th>Коробки</th>
-      <th>Цена (<span id="curLbl">CNY</span>/ед)</th><th>Партия (<span id="curLbl2">CNY</span>)</th>
-      <th>Партия (<span class="bcur">RUB</span>)</th><th>Транспорт</th><th>Тамож. стоимость</th>
-      <th>Пошлина 1</th><th>Пошлина 2</th><th>НДС</th><th>Прочие</th><th>ИТОГО</th>
-      <th>ИТОГО за кг</th><th>Цена продажи</th><th>Статус</th><th></th>
-    </tr></thead>
-    <tbody id="body"></tbody>
-    <tfoot><tr class="tot">
-      <td colspan="3">ИТОГО · 合计</td>
-      <td id="f_qty"></td><td id="f_w"></td><td id="f_c"></td>
-      <td></td><td id="f_pui"></td><td id="f_pr"></td><td id="f_tr"></td><td id="f_ts"></td>
-      <td id="f_p1"></td><td id="f_p2"></td><td id="f_vat"></td><td id="f_ot"></td>
-      <td id="f_tot" class="big"></td><td id="f_kg" class="kg"></td><td id="f_sell" class="big"></td><td></td><td></td>
-    </tr></tfoot>
-  </table></div>
-  <div>
-    <button class="btn" onclick="addRow()">+ Добавить позицию · 添加</button>
-    <button class="btn sec" onclick="demo()">Загрузить пример · 示例</button>
-    <button class="btn sec" onclick="clearRows()">Очистить · 清空</button>
-    <button class="btn sec" onclick="calc()">Пересчитать · 重新计算</button>
-    <button class="btn sec" onclick="window.print()">Печать · 打印</button>
-  </div>
-  <div class="hint">Код выбирается из справочника (п.3) или вписывается вручную; пошлины и контрольная цена подтягиваются по коду автоматически.</div>
+<div id="msg"></div>
+<button onclick="run()">Рассчитать · 计算</button>
+<button class="sec" onclick="fillDemo()">Пример · 示例</button>
+<button class="sec" onclick="window.print()">Печать · 打印</button>
 </div>
 
-<div class="card">
-  <h2>5. Итоги по поставке · 汇总</h2>
-  <div class="sum" id="summary"></div>
+<div class="card" id="dutyCard" style="display:none">
+<h2>3. Пошлина за килограмм · 每公斤关税 <span class="cur-tag" id="dutyTag"></span></h2>
+<div id="dutyOut"></div>
+<div class="hint">Пошлина 1 = ставка % от таможенной стоимости, поделённая на вес нетто.
+Пошлина 2 = ставка EUR/кг (пересчитана в валюту расчёта). Итого = сумма обеих.</div>
 </div>
 
-<datalist id="codes"></datalist>
+<div class="card" id="outCard" style="display:none">
+<h2>4. Итог поставки <span class="cur-tag" id="curTag"></span></h2>
+<div id="out"></div>
+</div>
 
 <script>
-var REF0=[
- {c:'0603110000',ru:'Роза',cn:'玫瑰',d1:'5',d2:'0.30',k:'8.51'},
- {c:'0603120000',ru:'Гвоздика',cn:'康乃馨',d1:'5',d2:'0.30',k:'6.51'},
- {c:'0603130000',ru:'Орхидеи срезанные',cn:'鲜切兰花',d1:'5',d2:'0.30',k:'8.00'},
- {c:'0603140000',ru:'Хризантемы',cn:'鲜切菊花',d1:'5',d2:'0.30',k:'6.00'},
- {c:'0603150000',ru:'Лилии',cn:'鲜切百合',d1:'5',d2:'0.30',k:'8.00'},
- {c:'0603191000',ru:'Гладиолусы',cn:'剑兰',d1:'5',d2:'0.30',k:'6.00'},
- {c:'0603197000',ru:'Прочие срезанные цветы',cn:'其他鲜切花',d1:'5',d2:'0.30',k:'5.90'},
- {c:'0604209000',ru:'Зелень, листья',cn:'叶材/干花',d1:'7.5',d2:'0.45',k:'19.91'},
- {c:'0602400000',ru:'Роза горшечная',cn:'盆栽玫瑰',d1:'5',d2:'0',k:'0'},
- {c:'0601203000',ru:'Фаленопсис горшечный',cn:'盆栽蝴蝶兰',d1:'5',d2:'0',k:'0'},
- {c:'0602909900',ru:'Растения прочие (суккуленты)',cn:'其他活植物',d1:'5',d2:'0',k:'0'}
-];
-var START=[
- ['0603120000','Гвоздика',58900,2100,125,0.24],
- ['0603110000','Роза',23700,684,65,0.25],
- ['0603197000','Гипсофила',1728,144,12,0.50],
- ['0603197000','Ландышевые, Лепидиум',1200,50,5,0.25],
- ['0603197000','Лимониум',1680,125,10,0.44],
- ['0603197000','Молуцелла',3000,104,15,0.21],
- ['0603197000','Гортензия',360,144,15,2.36],
- ['0603197000','Статице',2100,110,10,0.31],
- ['0603197000','Эустома',640,60,5,0.56],
- ['0603197000','Зантедеския',1250,30,5,0.15],
- ['0603120000','Гвоздика Барбатус',800,48,5,0.40],
- ['0603197000','Озотамнус',625,62,5,0.59],
- ['0603197000','Георгина',600,59,6,0.59],
- ['0603197000','Альстромерия',250,12,1,0.29],
- ['0604209000','Эвкалипт',6840,944,100,0.70],
- ['0604209000','Писташия',2112,380,44,0.91],
- ['0604209000','Рускус',16000,176,20,0.06],
- ['0604209000','Гиперикум',640,88,8,0.69],
- ['0602400000','Роза (горшечная)',50,17,2,1.37]
-];
+/* ===== СПРАВОЧНИК: код -> ставки ===== */
+const REF={
+'0603110000':{n:'Розы',cn:'玫瑰',pct:5,min:0.30,ctrl:8.51},
+'0603120000':{n:'Гвоздики',cn:'康乃馨',pct:5,min:0.30,ctrl:6.51},
+'0603130000':{n:'Орхидеи',cn:'兰花',pct:5,min:0.30,ctrl:12.00},
+'0603140000':{n:'Хризантемы',cn:'菊花',pct:7.5,min:0.30,ctrl:9.00},
+'0603150000':{n:'Лилии',cn:'百合',pct:5,min:0.30,ctrl:10.00},
+'0603191000':{n:'Гладиолусы',cn:'剑兰',pct:5,min:0.30,ctrl:7.00},
+'0603197000':{n:'Прочие срезанные цветы',cn:'其他',pct:5,min:0.30,ctrl:8.00},
+'0603900000':{n:'Сухоцветы',cn:'干花',pct:7.5,min:0.45,ctrl:6.00},
+'0604209000':{n:'Зелень декоративная',cn:'装饰叶',pct:5,min:0.30,ctrl:4.00},
+'0601203000':{n:'Фаленопсис горшечной',cn:'盆栽兰花',pct:5,min:0,ctrl:15.00},
+'0602909900':{n:'Растения прочие',cn:'其他植物',pct:5,min:0,ctrl:5.00}
+};
 
-function n(v){var x=parseFloat(String(v).replace(',','.'));return isNaN(x)?0:x;}
-function f(x,d){if(d===undefined)d=0;return (Math.round(x*Math.pow(10,d))/Math.pow(10,d)).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});}
-function el(id){return document.getElementById(id);}
+let rows=[], wb=null;
 
-/* ---------- справочник кодов ---------- */
-function addRef(r){
-  r=r||{c:'',ru:'',cn:'',d1:'5',d2:'0',k:'0'};
-  var tr=document.createElement('tr');
-  tr.innerHTML='<td><input class="rc" value="'+r.c+'" style="width:110px"></td>'+
-   '<td><input class="rru" value="'+r.ru+'" style="width:160px"></td>'+
-   '<td><input class="rcn" value="'+r.cn+'" style="width:110px"></td>'+
-   '<td><input class="rd1" type="number" step="0.1" value="'+r.d1+'" style="width:70px"></td>'+
-   '<td><input class="rd2" type="number" step="0.01" value="'+r.d2+'" style="width:85px"></td>'+
-   '<td><input class="rk" type="number" step="0.01" value="'+r.k+'" style="width:85px"></td>'+
-   '<td><button class="btn sec" style="padding:3px 8px;margin:0" onclick="this.closest(\'tr\').remove();syncCodes();calc()">X</button></td>';
-  el('refBody').appendChild(tr);
-  tr.querySelectorAll('input').forEach(function(i){i.addEventListener('input',function(){syncCodes();calc();});});
-  syncCodes();
+/* ===== КУРСЫ ===== */
+function rates(){
+  return {
+    CNY:+document.getElementById('r1').value||0.1405,
+    EUR:+document.getElementById('r2').value||1.10,
+    RUB:+document.getElementById('r3').value||0.0125,
+    USD:1
+  };
 }
-function syncCodes(){
-  var list=[].slice.call(document.querySelectorAll('#refBody .rc')).map(function(i){return i.value.trim();}).filter(Boolean);
-  el('codes').innerHTML=list.map(function(c){return '<option value="'+c+'">';}).join('');
+function conv(v,from,to){
+  const R=rates();
+  const usd=v*(R[from]||1);
+  return usd/(R[to]||1);
 }
-function refMap(){
-  var m={};
-  [].slice.call(document.querySelectorAll('#refBody tr')).forEach(function(tr){
-    var c=tr.querySelector('.rc'); if(!c) return;
-    var code=c.value.trim(); if(!code) return;
-    m[code]={d1:n(tr.querySelector('.rd1').value),d2:n(tr.querySelector('.rd2').value),k:n(tr.querySelector('.rk').value)};
-  });
-  return m;
-}
+function money(v){ return v.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
-/* ---------- курсы ---------- */
-var DEF={CNY:11.24,USD:80,EUR:88,RUB:1};
-function rateMap(){
-  var b=el('base').value;
-  var r={CNY:n(el('rCNY').value),USD:n(el('rUSD').value),EUR:n(el('rEUR').value),RUB:n(el('rRUB').value)};
-  ['CNY','USD','EUR','RUB'].forEach(function(k){ if(!(r[k]>0)) r[k]=DEF[k]; });
-  r[b]=1;
-  return {b:b,r:r};
+function syncCur(){
+  const cur=document.getElementById('cur').value;
+  const base=document.getElementById('base').value;
+  document.getElementById('rateInfo').innerHTML=
+    `Инвойс в <b>${cur}</b> → расчёт в <b>${base}</b>. `+
+    `1 ${cur} = ${money(conv(1,cur,base))} ${base}. `+
+    (cur===base?'Совпадают — пересчёта нет.':'Пересчёт выполнен автоматически.');
+  if(rows.length) run();
 }
-function lockRateFields(b){
-  ['CNY','USD','EUR','RUB'].forEach(function(k){
-    var i=el('r'+k);
-    i.readOnly=(k===b);
-    i.style.background=(k===b)?'#f0f2f5':'';
-  });
+function calcRates(){ if(rows.length) run(); }
+
+/* ===== ФАЙЛ ===== */
+function num(s){
+  if(s==null||s==='') return 0;
+  if(typeof s==='number') return s;
+  s=String(s).replace(/[\s\u00A0\u2009\u202F]/g,'').replace(',','.');
+  const v=parseFloat(s); return isNaN(v)?0:v;
 }
-function changeBase(){
-  var oldB=el('base').dataset.prev||'RUB';
-  var newB=el('base').value;
-  if(oldB!==newB){
-    var r={CNY:n(el('rCNY').value),USD:n(el('rUSD').value),EUR:n(el('rEUR').value),RUB:n(el('rRUB').value)};
-    ['CNY','USD','EUR','RUB'].forEach(function(k){ if(!(r[k]>0)) r[k]=DEF[k]; });
-    r[oldB]=1;                                  // курс прежней базы к себе самой
-    var div=r[newB]>0?r[newB]:1;
-    ['CNY','USD','EUR','RUB'].forEach(function(k){
-      el('r'+k).value=Math.round(r[k]/div*1000000)/1000000;
-    });
-    var m=1/div;                                  // абсолютные суммы пересчитываем в новую базу
-    ['transport','broker','svh','deliv'].forEach(function(id){
-      el(id).value=Math.round(n(el(id).value)*m*100)/100;
-    });
-    [].slice.call(document.querySelectorAll('#feeTbl tbody tr')).forEach(function(tr){
-      var th=tr.querySelector('.feeTh'), v=tr.querySelector('.feeV');
-      if(th && th.tagName==='INPUT') th.value=Math.round(n(th.value)*m*100)/100;
-      if(v) v.value=Math.round(n(v.value)*m*100)/100;
-    });
+document.getElementById('file').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  if(typeof XLSX==='undefined'){
+    document.getElementById('msg').innerHTML='<div class="warn">Библиотека Excel не загрузилась. Используйте ввод вручную или CSV.</div>';
+    return;
   }
-  el('base').dataset.prev=newB;
-  [].slice.call(document.querySelectorAll('.bcur')).forEach(function(s){s.textContent=newB;});
-  lockRateFields(newB);
-  calc();
-}
-
-/* ---------- позиции ---------- */
-function addRow(d){
-  var tr=document.createElement('tr');
-  tr.innerHTML='<td class="idx"></td>'+
-   '<td><input class="code" list="codes" value="'+(d?d[0]:'')+'"></td>'+
-   '<td><input class="name" value="'+(d?d[1]:'')+'"></td>'+
-   '<td><input class="qty" type="number" value="'+(d?d[2]:0)+'"></td>'+
-   '<td><input class="wt" type="number" step="0.1" value="'+(d?d[3]:0)+'"></td>'+
-   '<td><input class="box" type="number" value="'+(d?d[4]:0)+'"></td>'+
-   '<td><input class="price" type="number" step="0.0001" value="'+(d?d[5]:0)+'"></td>'+
-   '<td class="num pui"></td><td class="num pr"></td><td class="num trc"></td><td class="num ts"></td>'+
-   '<td class="num p1"></td><td class="num p2"></td><td class="num vat"></td><td class="num ot"></td>'+
-   '<td class="num tot"></td><td class="num kg"></td><td class="num sell"></td><td class="st"></td>'+
-   '<td><button class="btn sec" style="padding:3px 8px;margin:0" onclick="this.closest(\'tr\').remove();calc()">X</button></td>';
-  el('body').appendChild(tr);
-  tr.querySelectorAll('input').forEach(function(i){i.addEventListener('input',calc);});
-}
-function clearRows(){el('body').innerHTML='';calc();}
-function demo(){
-  clearRows();
-  START.forEach(function(d){addRow(d);});
-  el('invCur').value='USD';
-  msg('','');
-  calc();
-}
-
-function feeByTs(ts){
-  var fees=[], lim=[];
-  [].slice.call(document.querySelectorAll('#feeTbl tbody tr')).forEach(function(tr){
-    var th=tr.querySelector('.feeTh'), v=tr.querySelector('.feeV');
-    lim.push(th && th.tagName==='INPUT' ? n(th.value) : null);
-    fees.push(v ? n(v.value) : 0);
-  });
-  for(var i=0;i<lim.length;i++){ if(lim[i]!==null && lim[i]>0 && ts<=lim[i]) return fees[i]; }
-  return fees[fees.length-1]||0;
-}
-
-function calc(){
-  var cur=el('invCur').value;
-  el('curLbl').textContent=cur; el('curLbl2').textContent=cur;
-  var RM=rateMap(), r=RM.r, B=RM.b;
-  var vatP=n(el('vat').value)/100, mark=n(el('mark').value)/100;
-  var trans=n(el('transport').value);
-  var other=n(el('broker').value)+n(el('svh').value)+n(el('deliv').value);
-  var REF=refMap();
-  var rows=[].slice.call(document.querySelectorAll('#body tr'));
-  var boxTot=rows.reduce(function(s,x){return s+n(x.querySelector('.box').value);},0);
-  var wtTot=rows.reduce(function(s,x){return s+n(x.querySelector('.wt').value);},0);
-  var byWt=boxTot<=0 && wtTot>0, byRow=boxTot<=0 && wtTot<=0;
-  var shareTrans=function(x){
-    if(boxTot>0) return n(x.querySelector('.box').value)/boxTot*trans;
-    if(byWt) return n(x.querySelector('.wt').value)/wtTot*trans;
-    return rows.length?trans/rows.length:0;
-  };
-  var shareOther=function(x){
-    if(boxTot>0) return n(x.querySelector('.box').value)/boxTot*other;
-    if(byWt) return n(x.querySelector('.wt').value)/wtTot*other;
-    return rows.length?other/rows.length:0;
-  };
-  var T={qty:0,wt:0,box:0,pui:0,pr:0,tr:0,ts:0,p1:0,p2:0,vat:0,ot:0,tot:0,sell:0};
-  var flags=[];
-
-  rows.forEach(function(x,i){
-    x.querySelector('.idx').textContent=i+1;
-    var code=x.querySelector('.code').value.trim(), ref=REF[code];
-    var qty=n(x.querySelector('.qty').value), wt=n(x.querySelector('.wt').value), box=n(x.querySelector('.box').value);
-    var price=n(x.querySelector('.price').value);
-    var pui=qty*price;                    // партия в валюте инвойса
-    var pr=pui*r[cur];                    // в валюту расчёта
-    var trc=shareTrans(x);
-    var ts=pr+trc;                        // таможенная стоимость
-    var p1=ref?ts*ref.d1/100:0;           // пошлина 1, %
-    var p2=ref?wt*ref.d2*r.EUR:0;         // пошлина 2, EUR/кг
-    var vat=(ts+p1+p2)*vatP;
-    var ot=shareOther(x);
-    var tot=ts+p1+p2+vat+ot;
-    var kg=wt>0?tot/wt:0;
-    var sell=tot*(1+mark);
-
-    x.querySelector('.pui').textContent=f(pui,2);
-    x.querySelector('.pr').textContent=f(pr);
-    x.querySelector('.trc').textContent=f(trc);
-    x.querySelector('.ts').textContent=f(ts);
-    x.querySelector('.p1').textContent=f(p1);
-    x.querySelector('.p2').textContent=f(p2);
-    x.querySelector('.vat').textContent=f(vat);
-    x.querySelector('.ot').textContent=f(ot);
-    x.querySelector('.tot').textContent=f(tot);
-    x.querySelector('.kg').textContent=wt>0?f(kg,2):'-';
-    x.querySelector('.sell').textContent=f(sell);
-
-    var st=x.querySelector('.st');
-    if(!ref){ st.innerHTML='<span class="nocode">нет кода</span>'; flags.push('строка '+(i+1)+' ('+x.querySelector('.name').value+'): код "'+code+'" не найден в справочнике - пошлины не начислены'); }
-    else if(ref.k>0 && wt>0){
-      var usdPerKg=(pui*r[cur]/r.USD)/wt;
-      if(usdPerKg<ref.k) st.innerHTML='<span class="warn">ниже контроля ('+f(usdPerKg,2)+' &lt; '+f(ref.k,2)+')</span>';
-      else st.innerHTML='<span class="ok">OK</span>';
-    } else st.innerHTML='<span class="ok">OK</span>';
-
-    T.qty+=qty;T.wt+=wt;T.box+=box;T.pui+=pui;T.pr+=pr;T.tr+=trc;T.ts+=ts;
-    T.p1+=p1;T.p2+=p2;T.vat+=vat;T.ot+=ot;T.tot+=tot;T.sell+=sell;
-  });
-
-  var set=function(id,v){el(id).textContent=v;};
-  set('f_qty',f(T.qty));set('f_w',f(T.wt,1));set('f_c',f(T.box));
-  set('f_pui',f(T.pui,2));set('f_pr',f(T.pr));set('f_tr',f(T.tr));set('f_ts',f(T.ts));
-  set('f_p1',f(T.p1));set('f_p2',f(T.p2));set('f_vat',f(T.vat));set('f_ot',f(T.ot));
-  set('f_tot',f(T.tot));set('f_sell',f(T.sell));
-
-  var fee=rows.length?feeByTs(T.ts):0;
-  var cost=T.tot+fee;
-  set('f_kg',T.wt>0?f(cost/T.wt,2):'-');
-  var alloc=boxTot>0?'по коробкам · 按箱分摊':(byWt?'по весу нетто · 按净重分摊':'поровну · 按行均摊');
-
-  el('summary').innerHTML=
-    '<div><label>Партия в '+cur+' · 发票金额</label><b>'+f(T.pui,2)+' '+cur+'</b></div>'+
-    '<div><label>Себестоимость товара · 货值</label><b>'+f(T.pr)+' '+B+'</b></div>'+
-    '<div><label>Транспорт · 运费</label><b>'+f(T.tr)+' '+B+'</b></div>'+
-    '<div><label>Распределение расходов · 分摊方式</label><b>'+alloc+'</b></div>'+
-    '<div><label>Таможенная стоимость · 完税价格</label><b>'+f(T.ts)+' '+B+'</b></div>'+
-    '<div><label>Пошлина 1 (% от стоимости) · 从价税</label><b>'+f(T.p1)+' '+B+'</b></div>'+
-    '<div><label>Пошлина 2 (EUR/кг) · 从量税</label><b>'+f(T.p2)+' '+B+'</b></div>'+
-    '<div><label>НДС '+f(vatP*100,1)+'% · 增值税</label><b>'+f(T.vat)+' '+B+'</b></div>'+
-    '<div><label>Таможенный сбор · 报关费</label><b>'+f(fee)+' '+B+'</b></div>'+
-    '<div><label>Прочие (брокер+СВХ+доставка) · 其他</label><b>'+f(T.ot)+' '+B+'</b></div>'+
-    '<div><label>Таможенные платежи всего · 税费合计</label><b>'+f(T.p1+T.p2+T.vat+fee)+' '+B+'</b></div>'+
-    '<div><label>СЕБЕСТОИМОСТЬ · 总成本</label><b class="big">'+f(cost)+' '+B+'</b></div>'+
-    '<div><label>Себестоимость за кг нетто · 每公斤成本</label><b class="big">'+(T.wt>0?f(cost/T.wt,2):'-')+' '+B+'/кг</b></div>'+
-    '<div><label>Цена продажи (+'+f(mark*100,0)+'%) · 销售价</label><b class="big">'+f(T.sell)+' '+B+'</b></div>'+
-    '<div><label>Прибыль · 利润</label><b class="big">'+f(T.sell-cost)+' '+B+'</b></div>'+
-    (flags.length?'<div class="warn" style="grid-column:1/-1;padding:8px">'+flags.join('<br>')+'</div>':'');
-}
-
-/* ---------- загрузка Excel / CSV ---------- */
-var wb=null;
-el('file').addEventListener('change',function(e){
-  var fobj=e.target.files[0]; if(!fobj) return;
-  if(typeof XLSX==='undefined'){ msg('err','Библиотека Excel не загрузилась (нет интернета). Скачайте xlsx.full.min.js рядом с index.html или вносите позиции вручную.'); return; }
-  var rd=new FileReader();
-  rd.onload=function(ev){
+  const r=new FileReader();
+  r.onload=ev=>{
     try{
       wb=XLSX.read(ev.target.result,{type:'array'});
-      var sel=el('sheetSel');
-      sel.innerHTML=wb.SheetNames.map(function(nm,i){return '<option value="'+i+'">'+nm+'</option>';}).join('');
-      el('sheets').style.display=wb.SheetNames.length>1?'block':'none';
+      const sel=document.getElementById('sheetSel');
+      sel.innerHTML=wb.SheetNames.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
+      document.getElementById('sheets').style.display=wb.SheetNames.length>1?'block':'none';
       loadSheet();
-    }catch(err){ msg('err','Ошибка файла: '+err.message); }
+    }catch(err){ document.getElementById('msg').innerHTML='<div class="warn">'+err.message+'</div>'; }
   };
-  rd.readAsArrayBuffer(fobj);
+  r.readAsArrayBuffer(f);
 });
 function loadSheet(){
-  var ws=wb.Sheets[wb.SheetNames[+el('sheetSel').value]];
+  const ws=wb.Sheets[wb.SheetNames[+document.getElementById('sheetSel').value]];
   parse(XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''}));
 }
-function msg(kind,text){ var m=el('msg'); m.className='msg'+(kind?' '+kind:''); m.innerHTML=text; }
-function num(s){
-  if(s===null||s===undefined||s==='') return 0;
-  if(typeof s==='number') return s;
-  var t=String(s).replace(/[\s\u00A0\u2009\u202F]/g,'').replace(',','.');
-  var v=parseFloat(t); return isNaN(v)?0:v;
-}
-function guessCode(name){
-  var s=(name||'').toLowerCase();
-  if(/роз|玫瑰/.test(s)) return /горш|盆栽/.test(s)?'0602400000':'0603110000';
-  if(/гвозд|康乃馨/.test(s)) return '0603120000';
-  if(/хризантем|菊花/.test(s)) return '0603140000';
-  if(/орхид|兰花|фаленопсис|蝴蝶兰/.test(s)) return /горш|盆栽/.test(s)?'0601203000':'0603130000';
-  if(/лилия|百合/.test(s)) return '0603150000';
-  if(/гладиол|剑兰/.test(s)) return '0603191000';
-  if(/зелень|эвкалипт|писташия|рускус|гиперикум|叶材|装饰叶/.test(s)) return '0604209000';
-  if(/суккулент|горш|盆栽/.test(s)) return '0602909900';
-  return '0603197000';
-}
 function parse(aoa){
-  var lines=(aoa||[]).map(function(row){return Array.isArray(row)?row.map(function(c){return c===null||c===undefined?'':String(c);}):[];});
-  if(!lines.length){ msg('err','Файл пустой.'); return; }
-  var hEnd=0;
-  for(var i=0;i<lines.length;i++){
-    var hasText=lines[i].some(function(c){return c.trim().length>0;});
-    var hasNum=lines[i].some(function(c){return num(c)>0;});
+  const lines=(aoa||[]).map(r=>Array.isArray(r)?r.map(c=>c==null?'':String(c)):[]);
+  if(!lines.length){ document.getElementById('msg').innerHTML='<div class="warn">Файл пустой.</div>'; return; }
+
+  // границы шапки: строки без чисел
+  let hEnd=0;
+  for(let i=0;i<lines.length;i++){
+    const hasText=lines[i].some(c=>c.trim().length>0);
+    const hasNum=lines[i].some(c=>num(c)>0);
     if(hasText&&!hasNum) hEnd=i;
     if(hasNum) break;
   }
-  var header=[];
-  for(var q=0;q<=hEnd;q++){ (lines[q]||[]).forEach(function(c,j){
-    var t=c.replace(/["\s]/g,''); if(t&&!header[j]) header[j]=t;
-  }); }
-  for(var j=0;j<60;j++) if(!header[j]) header[j]='';
-  var find=function(){ var keys=[].slice.call(arguments);
-    return header.findIndex(function(h){return keys.some(function(k){return String(h).indexOf(k)>=0;});}); };
-  var iN=find('товар','наимен','品名','NAME'), iQ=find('数量','QTY','кол-во'),
-      iC=find('币别','CURRENCY','валют'), iP=find('单价','UNIT PRICE','цена'),
-      iS=find('总金额','TOTAL','VALUE','金额','сумм'), iB=find('件数','PACKING','мест','короб'),
-      iNet=find('净重','N.WEIGHT','нетто'), iG=find('毛重','G.WEIGHT','брутто');
+  // склейка двуязычной шапки
+  const header=[];
+  for(let i=0;i<=hEnd;i++) (lines[i]||[]).forEach((c,j)=>{
+    const t=String(c).replace(/["\s]/g,'');
+    if(t) header[j]=header[j]?header[j]+' '+t:t;
+  });
+  for(let j=0;j<60;j++) if(!header[j]) header[j]='';
 
-  // колонка наименования часто без заголовка (в китайских инвойсах шапка пустая) - ищем по содержимому
-  var iNok=(iN<0);
-  if(iNok){
-    var mapped={}; [iQ,iC,iP,iS,iB,iNet,iG].forEach(function(x){ if(x>=0) mapped[x]=1; });
-    var unit=/^(pcs|set|sets|kg|kgs|ctn|ctns|cartons?|units?|cny|usd|eur|rub|шт|компл)$/i;
-    for(var z=0;z<hEnd+1+ (lines.length>hEnd+1?lines[hEnd+1].length:0) && iNok; z++){
-      var row=lines[hEnd+1]||[];
-      for(var y=0;y<row.length;y++){
-        if(mapped[y]) continue;
-        var v=String(row[y]||'').trim();
-        if(v && !(num(v)>0) && !unit.test(v)){ iN=y; iNok=false; break; }
-      }
-    }
+  const find=(...k)=>header.findIndex(h=>k.some(x=>String(h).includes(x)));
+  const iQ=find('数量','QTY','кол-во'),
+        iC=find('币别','CURRENCY','валют'),
+        iP=find('单价','UNIT PRICE','цена'),
+        iS=find('总金额','TOTAL','VALUE','金额','сумм'),
+        iNet=find('净重','N.WEIGHT','нетто'),
+        iG=find('毛重','G.WEIGHT','брутто'),
+        iBox=find('件数','PACKING','короб'),
+        iCode=find('编码','HS','ТН ВЭД');
+  // наименование: колонка с текстом, не похожая на код/валюту
+  let iN=-1;
+  for(let j=0;j<header.length;j++){
+    if(header[j]) continue;
+    const sample=lines.slice(hEnd+1).map(c=>c[j]).filter(x=>x&&isNaN(num(x)));
+    if(sample.length>1){ iN=j; break; }
   }
 
-  clearRows();
-  var cur='', count=0, warn=[];
-  lines.slice(hEnd+1).forEach(function(c){
+  rows=[]; let cur='';
+  lines.slice(hEnd+1).forEach(c=>{
     if(!Array.isArray(c)) return;
-    var sum=num(c[iS]), qty=num(c[iQ]);
-    if(!sum && !qty) return;
-    var cc=(iC>=0?c[iC]:'')||'';
+    const sum=num(c[iS]); if(!sum) return;
+    let cc=(iC>=0?c[iC]:'')||'';
     if(/CNY|人民币|¥/i.test(cc)) cc='CNY';
     else if(/USD|\$/i.test(cc)) cc='USD';
-    else if(/EUR|€/i.test(cc)) cc='EUR'; else cc='';
+    else if(/EUR|€/i.test(cc)) cc='EUR';
     if(cc) cur=cc;
-    var name=String(c[iN]||'').replace(/["\s]+$/,'');
-    var priceFile=iP>=0?num(c[iP]):0;
-    var price=priceFile;
-    if(sum>0 && qty>0){
-      price=sum/qty;
-      if(priceFile>0 && Math.abs(priceFile*qty-sum)>1){
-        warn.push(name+': цена '+priceFile+' x '+f(qty)+' = '+f(priceFile*qty,2)+', а в инвойсе сумма '+f(sum,2)+' (разница '+f(Math.abs(priceFile*qty-sum),2)+') - взята сумма инвойса');
-      }
-    } else if(price>0 && qty>0){ sum=price*qty; }
-    var net=num(c[iNet]), gross=num(c[iG]);
-    if(net && gross && net>gross) warn.push(name+': нетто '+net+' больше брутто '+gross);
-    addRow([guessCode(name),name,qty,net,num(c[iB]),price]);
-    count++;
+    const qty=num(c[iQ]);
+    rows.push({
+      name:String(c[iN]||'').replace(/["\s]+$/,''),
+      qty, price:qty?sum/qty:num(c[iP]), sum,
+      net:num(c[iNet]), gross:num(c[iG]), box:num(c[iBox]),
+      cur:cc,
+      code:(iCode>=0&&c[iCode])?String(c[iCode]).replace(/\D/g,'').slice(0,10):guessCode(String(c[iN]||''))
+    });
   });
-  if(!count){ msg('err','Позиции не найдены. Прочитанные заголовки: '+header.filter(Boolean).join(' | ')); return; }
   if(!cur) cur=/CNY|人民币|¥/.test(lines.join(' '))?'CNY':'USD';
-  el('invCur').value=cur;
-  msg('ok','Загружено позиций: '+count+'. Валюта инвойса: <b>'+cur+'</b>.'+
-      (warn.length?'<br><span class="warn" style="display:inline-block;margin-top:4px">'+warn.join('<br>')+'</span>':'')+
-      '<br>Сумма каждой строки взята из колонки суммы инвойса (цена = сумма / кол-во). Проверьте коды ТН ВЭД, коробки и вес нетто.');
-  calc();
+  document.getElementById('cur').value=cur;
+  syncCur();
+  document.getElementById('msg').innerHTML=rows.length
+    ? `<div class="ok">Загружено позиций: ${rows.length}. Валюта: <b>${cur}</b>.</div>`
+    : `<div class="warn">Суммы не найдены. Заголовки: ${header.filter(Boolean).join(' | ')}</div>`;
+  if(rows.length) run();
+}
+function guessCode(name){
+  const s=name.toLowerCase();
+  if(/роз|玫瑰/.test(s)&&!/горш|盆栽/.test(s)) return '0603110000';
+  if(/гвозд|康乃馨/.test(s)) return '0603120000';
+  if(/хризантем|菊花/.test(s)) return '0603140000';
+  if(/орхид|兰花|фаленопсис/.test(s)) return /горш|盆栽/.test(s)?'0601203000':'0603130000';
+  if(/лилия|百合/.test(s)) return '0603150000';
+  if(/гладиол|剑兰/.test(s)) return '0603191000';
+  if(/сухоцвет|干花/.test(s)) return '0603900000';
+  if(/зелень|эвкалипт|装饰叶/.test(s)) return '0604209000';
+  if(/суккулент|горш/.test(s)) return '0602909900';
+  return '0603197000';
 }
 
-/* ---------- старт ---------- */
-el('base').dataset.prev='RUB';
-[].slice.call(document.querySelectorAll('.bcur')).forEach(function(x){x.textContent='RUB';});
-lockRateFields('RUB');
-REF0.forEach(function(r){addRef(r);});
-syncCodes();
-demo();
+function fillDemo(){
+  rows=[
+    {name:'Роза',cn:'玫瑰',qty:14000,price:2.16,sum:30187.18,net:785,gross:982,box:196,cur:'CNY',code:'0603110000'},
+    {name:'Гвоздика',cn:'康乃馨',qty:26720,price:0.96,sum:25550.48,net:998,gross:1248,box:250,cur:'CNY',code:'0603120000'},
+    {name:'Хризантема',cn:'菊花',qty:19000,price:4.06,sum:77061.48,net:1426,gross:1782,box:239,cur:'CNY',code:'0603140000'}
+  ];
+  document.getElementById('cur').value='CNY';
+  document.getElementById('base').value='USD';
+  syncCur();
+}
+
+/* ===== РАСЧЁТ ===== */
+function run(){
+  if(!rows.length){
+    document.getElementById('dutyCard').style.display='none';
+    document.getElementById('outCard').style.display='none';
+    return;
+  }
+  const cur=document.getElementById('cur').value;
+  const base=document.getElementById('base').value;
+  const vPct=+document.getElementById('vat').value||0;
+  const dDefault=+document.getElementById('duty').value||0;
+  const trans=+document.getElementById('trans').value||0;
+  const broker=+document.getElementById('broker').value||0;
+  const svh=+document.getElementById('svh').value||0;
+  const deliv=+document.getElementById('deliv').value||0;
+  const extra=broker+svh+deliv;
+
+  let tInv=0, tBox=0, tNet=0;
+  rows.forEach(r=>{ tInv+=r.sum; tBox+=r.box||0; tNet+=r.net||0; });
+
+  // распределение расходов: коробки -> вес -> поровну
+  const key=tBox?'box':(tNet?'net':'eq');
+  const wSum=tBox||tNet||rows.length;
+
+  let html=`<table><tr><th>Наименование</th><th>Код</th><th>Кол-во</th>
+    <th>Сумма (${cur})</th><th>Тамож. база (${cur})</th><th>Нетто кг</th>
+    <th>Пошлина 1</th><th>Пошлина 2</th><th>НДС</th><th>Себест. (${base})</th></tr>`;
+
+  let sumDuty1=0, sumDuty2=0, sumVat=0, sumCost=0;
+  const perRow=[];
+
+  rows.forEach(r=>{
+    const w=key==='box'?(r.box||0):key==='net'?(r.net||0):1;
+    const share=wSum?w/wSum:0;
+    const transRow=trans*share;
+    const baseRow=r.sum+transRow;               // таможенная стоимость позиции
+    const ref=REF[r.code]||{pct:dDefault,min:0,ctrl:0};
+
+    const d1=baseRow*ref.pct/100;               // % от таможенной стоимости
+    const d2=conv(ref.min*(r.net||0),'EUR',cur);// EUR/кг
+    const dutyCur=d1+d2;
+    const vatCur=(baseRow+dutyCur)*vPct/100;
+    const costCur=baseRow+dutyCur+vatCur+extra*share;
+
+    const d1B=conv(d1,cur,base), d2B=conv(d2,cur,base);
+    const vatB=conv(vatCur,cur,base), costB=conv(costCur,cur,base);
+    sumDuty1+=d1B; sumDuty2+=d2B; sumVat+=vatB; sumCost+=costB;
+
+    perRow.push({name:r.name,code:r.code,net:r.net||0,
+      inv:conv(r.sum,cur,base),duty:d1B+d2B});
+
+    html+=`<tr><td>${r.name}</td><td>${r.code}</td>
+      <td class="num">${r.qty.toLocaleString()}</td>
+      <td class="num">${money(r.sum)}</td>
+      <td class="num">${money(baseRow)}</td>
+      <td class="num">${(r.net||0).toLocaleString()}</td>
+      <td class="num">${money(d1B)}</td>
+      <td class="num">${money(d2B)}</td>
+      <td class="num">${money(vatB)}</td>
+      <td class="kg">${money(costB)}</td></tr>`;
+  });
+  html+='</table>';
+
+  const invBase=conv(tInv,cur,base);
+  const transBase=conv(trans,cur,base);
+  const extraBase=conv(extra,cur,base);
+  const customsBase=invBase+transBase;
+  const total=sumCost;
+
+  html+=`<div style="margin-top:12px">
+    <div class="row"><span>Стоимость товара</span><b>${money(invBase)} ${base}</b></div>
+    <div class="row"><span>Транспорт</span><b>${money(transBase)} ${base}</b></div>
+    <div class="row"><span>Таможенная стоимость</span><b>${money(customsBase)} ${base}</b></div>
+    <div class="row"><span>Пошлина 1 (%)</span><b>${money(sumDuty1)} ${base}</b></div>
+    <div class="row"><span>Пошлина 2 (EUR/кг)</span><b>${money(sumDuty2)} ${base}</b></div>
+    <div class="row"><span>НДС ${vPct}%</span><b>${money(sumVat)} ${base}</b></div>
+    <div class="row"><span>Брокер + СВХ + доставка</span><b>${money(extraBase)} ${base}</b></div>
+    <div class="tot"><span>ИТОГО себестоимость</span><span>${money(total)} ${base}</span></div>
+  </div>`;
+  if(tNet) html+=`<div class="info">Себестоимость за кг нетто: <b>${money(total/tNet)} ${base}/кг</b> (${tNet.toLocaleString()} кг).
+  Расходы распределены по ${key==='box'?'коробкам':key==='net'?'весу нетто':'позициям'}.</div>`;
+
+  const warn=[];
+  rows.forEach(r=>{
+    if(r.net&&r.gross&&r.net>r.gross) warn.push(`${r.name}: нетто ${r.net} > брутто ${r.gross}`);
+    if(r.price&&r.qty&&Math.abs(r.price*r.qty-r.sum)>1)
+      warn.push(`${r.name}: цена×кол-во = ${money(r.price*r.qty)}, в инвойсе ${money(r.sum)}`);
+    if(!REF[r.code]) warn.push(`${r.name}: код ${r.code} не найден в справочнике — применена ставка ${dDefault}%`);
+  });
+  if(warn.length) html+=`<div class="warn">${warn.join('<br>')}</div>`;
+
+  document.getElementById('curTag').textContent=base;
+  document.getElementById('out').innerHTML=html;
+  document.getElementById('outCard').style.display='block';
+
+  renderDuty(perRow,base);
+}
+
+/* ===== ПОШЛИНА ЗА КИЛОГРАММ ===== */
+function renderDuty(perRow,base){
+  let html=`<table><tr>
+    <th>Наименование · 名称</th><th>Код ТН ВЭД</th><th>Нетто, кг</th>
+    <th>Пошлина 1, %/кг</th><th>Пошлина 2, EUR/кг</th>
+    <th>ИТОГО пошлина, ${base}/кг</th><th>Контроль, USD/кг</th><th>Отклонение</th></tr>`;
+  let sumDuty=0, sumKg=0;
+
+  perRow.forEach(p=>{
+    const kg=p.net;
+    if(!kg) return;
+    const ref=REF[p.code]||{min:0,ctrl:0};
+    const d1kg=p.duty/kg;
+    const d2kg=conv(ref.min,'EUR',base);
+    const total=d1kg+d2kg;
+    sumDuty+=total*kg; sumKg+=kg;
+
+    const ctrl=ref.ctrl||0;
+    const factUsd=conv(p.inv/kg,base,'USD');
+    const diff=ctrl?(factUsd-ctrl)/ctrl*100:null;
+
+    html+=`<tr><td>${p.name}</td><td>${p.code}</td>
+      <td class="num">${kg.toLocaleString()}</td>
+      <td class="num">${money(d1kg)}</td>
+      <td class="num">${money(d2kg)}</td>
+      <td class="kg">${money(total)}</td>
+      <td class="num">${ctrl?money(ctrl):'—'}</td>
+      <td class="num" style="color:${diff==null?'#888':diff<0?'#c00':'#2a7a2a'}">
+        ${diff==null?'—':(diff>0?'+':'')+diff.toFixed(1)+'%'}</td></tr>`;
+  });
+  html+='</table>';
+
+  if(sumKg){
+    html+=`<div class="tot" style="margin-top:10px">
+      <span>Средняя пошлина за кг (${sumKg.toLocaleString()} кг)</span>
+      <span>${money(sumDuty/sumKg)} ${base}/кг</span></div>`;
+  } else {
+    html=`<div class="warn">Нет веса нетто (N.WEIGHT / 净重) — пошлину за кг посчитать нельзя.</div>`;
+  }
+  document.getElementById('dutyTag').textContent=base+' / кг';
+  document.getElementById('dutyOut').innerHTML=html;
+  document.getElementById('dutyCard').style.display='block';
+}
+
+syncCur();
 </script>
 </body>
 </html>
