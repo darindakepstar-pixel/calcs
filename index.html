@@ -26,6 +26,7 @@ table{width:100%;border-collapse:collapse;margin-top:8px}
 th{background:#1a56a0;color:#fff;padding:6px;font-size:11px;text-align:left}
 td{padding:5px 6px;border-bottom:1px solid #e3e7ee;font-size:12px}
 td.num{text-align:right;font-family:monospace}
+td.kg{background:#f6f9ff;font-weight:600;text-align:right;font-family:monospace}
 .warn{background:#fff3f3;border:1px solid #e0b4b4;border-radius:6px;padding:8px;font-size:12px;color:#a33;margin-top:8px}
 .ok{background:#eef9ee;border:1px solid #b7d8b7;border-radius:6px;padding:8px;font-size:12px;color:#2a7a2a;margin-top:8px}
 .info{background:#f0f6ff;border:1px solid #b7cdf0;border-radius:6px;padding:8px;font-size:12px;color:#255;margin-top:8px}
@@ -99,8 +100,12 @@ td.num{text-align:right;font-family:monospace}
 <div id="out"></div>
 </div>
 
+<div class="card" id="kgCard" style="display:none">
+<h2>4. Стоимость за килограмм <span class="cur-tag" id="kgTag"></span></h2>
+<div id="kgOut"></div>
+</div>
+
 <script>
-/* ===== СПРАВОЧНИК КОДОВ ТН ВЭД ===== */
 const REF={
 '0603110000':{n:'Розы',pct:5,min:0.30},
 '0603120000':{n:'Гвоздики',pct:5,min:0.30},
@@ -117,7 +122,6 @@ const REF={
 
 let rows=[], wb=null;
 
-/* ===== КУРСЫ ===== */
 function rates(){
   const cnyUsd=+document.getElementById('r1').value||0.1405;
   const eurUsd=+document.getElementById('r2').value||1.08;
@@ -149,7 +153,6 @@ function calcRates(){
   if(rows.length) run();
 }
 
-/* ===== ФАЙЛ ===== */
 function toggleSrc(){
   document.getElementById('fileBox').style.display=
     document.getElementById('src').value==='file'?'block':'none';
@@ -236,7 +239,6 @@ function guessCode(name){
   return '0603197000';
 }
 
-/* ===== РАСЧЁТ ===== */
 function fillDemo(){
   rows=[
     {name:'Роза',qty:14000,price:2.16,sum:30187.18,net:785,gross:982,cur:'CNY',code:'0603110000'},
@@ -249,7 +251,11 @@ function fillDemo(){
 }
 
 function run(){
-  if(!rows.length){ document.getElementById('outCard').style.display='none'; return; }
+  if(!rows.length){
+    document.getElementById('outCard').style.display='none';
+    document.getElementById('kgCard').style.display='none';
+    return;
+  }
   const cur=document.getElementById('cur').value;
   const base=document.getElementById('base').value;
   const dPct=+document.getElementById('duty').value||0;
@@ -268,6 +274,7 @@ function run(){
     <th>Пошлина (${base})</th></tr>`;
 
   let sumDutyBase=0, sumFeeBase=0;
+  const perRow=[];
 
   rows.forEach(r=>{
     const share=tInv?r.sum/tInv:0;
@@ -280,6 +287,7 @@ function run(){
     const feeBaseRow=conv(r.sum*fPct/100,cur,base);
     sumDutyBase+=dutyBaseRow;
     sumFeeBase+=feeBaseRow;
+    perRow.push({name:r.name,net:r.net,duty:dutyBaseRow,fee:feeBaseRow,inv:conv(r.sum,cur,base)});
     html+=`<tr><td>${r.name}</td><td>${r.code}</td>
       <td class="num">${r.qty.toLocaleString()}</td>
       <td class="num">${money(r.sum)}</td><td class="num">${money(baseRow)}</td>
@@ -314,6 +322,49 @@ function run(){
   document.getElementById('curTag').textContent=base;
   document.getElementById('out').innerHTML=html;
   document.getElementById('outCard').style.display='block';
+
+  renderKg(perRow,base,vPct);
+}
+
+/* ===== РАСЧЁТ ЗА КИЛОГРАММ ===== */
+function renderKg(perRow,base,vPct){
+  let html=`<table><tr>
+    <th>Товар</th><th>Нетто, кг</th>
+    <th>Закупка</th><th>Пошлина</th><th>Сбор</th><th>НДС</th>
+    <th>ИТОГО за кг</th></tr>`;
+  let sumCost=0, sumKg=0;
+
+  perRow.forEach(p=>{
+    if(!p.net){ return; }
+    const perInv=p.inv/p.net;
+    const perDuty=p.duty/p.net;
+    const perFee=p.fee/p.net;
+    const perVat=(perInv+perDuty+perFee)*vPct/100;
+    const perTotal=perInv+perDuty+perFee+perVat;
+    sumCost+=perTotal*p.net; sumKg+=p.net;
+    html+=`<tr><td>${p.name}</td><td class="num">${p.net.toLocaleString()}</td>
+      <td class="num">${money(perInv)}</td>
+      <td class="num">${money(perDuty)}</td>
+      <td class="num">${money(perFee)}</td>
+      <td class="num">${money(perVat)}</td>
+      <td class="kg">${money(perTotal)}</td></tr>`;
+  });
+  html+='</table>';
+
+  if(sumKg>0){
+    const avg=sumCost/sumKg;
+    html+=`<div class="tot" style="margin-top:10px">
+      <span>Средняя себестоимость (взвешенная по ${sumKg.toLocaleString()} кг)</span>
+      <span>${money(avg)} ${base} / кг</span></div>`;
+    html+=`<div class="info">Взвешенная средняя = сумма всех затрат (${money(sumCost)} ${base}) ÷ общий вес нетто.
+    Она выше у тяжёлых позиций, поэтому не равна простому среднему арифметическому.</div>`;
+  } else {
+    html+=`<div class="warn">Нет данных о весе нетто — расчёт за кг невозможен. Проверьте колонку N.WEIGHT в файле.</div>`;
+  }
+
+  document.getElementById('kgTag').textContent=base+' / кг';
+  document.getElementById('kgOut').innerHTML=html;
+  document.getElementById('kgCard').style.display='block';
 }
 
 syncCur();
